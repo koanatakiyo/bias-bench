@@ -27,6 +27,9 @@ parser.add_argument(
         "AlbertForMaskedLM",
         "RobertaForMaskedLM",
         "GPT2LMHeadModel",
+        "LlamaForCausalLM",  # Used for Llama 2 models
+        "PhiForCausalLM", # Used for Phi models
+        "MistralForCausalLM",
     ],
     help="Model to evalute (e.g., BertForMaskedLM). Typically, these correspond to a HuggingFace "
     "class.",
@@ -36,7 +39,14 @@ parser.add_argument(
     action="store",
     type=str,
     default="bert-base-uncased",
-    choices=["bert-base-uncased", "albert-base-v2", "roberta-base", "gpt2"],
+    choices=["bert-base-uncased", 
+             "albert-base-v2", 
+             "roberta-base", 
+             "gpt2",
+             "microsoft/Phi-3-mini-4k-instruct",
+             "meta-llama/Meta-Llama-3-8B",
+             "mistralai/Mistral-7B-Instruct-v0.3",
+             ],
     help="HuggingFace model name or path (e.g., bert-base-uncased). Checkpoint from which a "
     "model is instantiated.",
 )
@@ -73,14 +83,28 @@ if __name__ == "__main__":
     runner = CrowSPairsRunner(
         model=model,
         tokenizer=tokenizer,
-        input_file=f"{args.persistent_dir}/data/crows/crows_pairs_anonymized.csv",
+        input_file=f"{args.persistent_dir}/data/crows/crows_pairs_anonymized.csv" if args.custom_dataset_path is None else f"{args.persistent_dir}/data/crows/{args.custom_dataset_path}",
         bias_type=args.bias_type,
         is_generative=_is_generative(args.model),  # Affects model scoring.
+        model_name_or_path=args.model_name_or_path, # Added to determine unconditional start token
     )
     results = runner()
 
     print(f"Metric: {results}")
 
-    os.makedirs(f"{args.persistent_dir}/results/crows", exist_ok=True)
-    with open(f"{args.persistent_dir}/results/crows/{experiment_id}.json", "w") as f:
-        json.dump(results, f)
+
+    print(json.dumps(results, indent=4))
+    # Remove any slash from file experiment_id
+    experiment_id = experiment_id.replace("/", "_")
+
+    if args.custom_dataset_path is None:
+        path = f"{args.persistent_dir}/results/crows/{experiment_id}.json"
+        path_dir = f"{args.persistent_dir}/results/crows"
+    else:
+        path = f"{args.persistent_dir}/results/adapted_dataset/crows/{experiment_id}.json"
+        path_dir = f"{args.persistent_dir}/results/adapted_dataset/crows"
+    
+    os.makedirs(path_dir, exist_ok=True)
+    with open(path, "w") as f:
+        # json.dump(results, f)
+        json.dump(results, f, indent=4, sort_keys=True)

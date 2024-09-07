@@ -44,6 +44,7 @@ class CrowSPairsRunner:
         is_generative=False,
         is_self_debias=False,
         bias_type=None,
+        model_name_or_path=None,
     ):
         """Initializes CrowS-Pairs benchmark runner.
 
@@ -61,14 +62,28 @@ class CrowSPairsRunner:
         self._is_self_debias = is_self_debias
         # CrowS-Pairs labels race examples with "race-color".
         self._bias_type = bias_type if bias_type != "race" else "race-color"
+        self._model_name_or_path = model_name_or_path # Added for unconditional start token.
 
     def __call__(self):
-        if self._is_generative:
-            results = self._likelihood_score_generative()
-        else:
-            results = self._likelihood_score()
-        return results
+        if self._bias_type is not None:
+            if self._is_generative:
+                results = self._likelihood_score_generative()
+            else:
+                results = self._likelihood_score()
 
+            # Modified
+            results = {self._bias_type: results}
+            return results
+        else:
+            # Evaluate all bias types.
+            # Modified
+            results = {}
+            for bias_type in DEBIASING_PREFIXES.keys():
+                self._bias_type = bias_type
+                result = self._likelihood_score_generative() if self._is_generative else self._likelihood_score()
+                results[bias_type] = result
+            return results
+        
     def _likelihood_score(self):
         """Evaluates against the CrowS-Pairs dataset using likelihood scoring."""
         df_data = self._read_data(self._input_file)
@@ -185,6 +200,16 @@ class CrowSPairsRunner:
         print("=" * 100)
         print()
 
+        # Modified
+        results = {
+            "Total examples": N,
+            "Metric score": round((stereo_score + antistereo_score) / N * 100, 2),
+            "Stereotype score": round(stereo_score / total_stereo * 100, 2),
+            "Anti-stereotype score": round(antistereo_score / total_antistereo * 100, 2) if antistereo_score != 0 else None,
+            "Num. neutral": round(neutral / N * 100, 2),
+        }
+        return results
+
         return round((stereo_score + antistereo_score) / N * 100, 2)
 
     def _likelihood_score_generative(self):
@@ -217,6 +242,10 @@ class CrowSPairsRunner:
         neutral = 0
         total = len(df_data.index)
 
+        # Get unconditional start token of the model.
+        unconditional_start_token = start_token_mapper(self._model_name_or_path.split("/")[-1].split("-")[0].lower())
+        print(f"Unconditional start token: {unconditional_start_token}")
+
         with tqdm(total=total) as pbar:
             for index, data in df_data.iterrows():
                 direction = data["direction"]
@@ -224,11 +253,11 @@ class CrowSPairsRunner:
 
                 sent1, sent2 = data["sent1"], data["sent2"]
 
-                sent1_token_ids = self._tokenizer.encode(sent1)
-                sent2_token_ids = self._tokenizer.encode(sent2)
+                sent1_token_ids = self._tokenizer.encode(sent1, add_special_tokens=False)
+                sent2_token_ids = self._tokenizer.encode(sent2, add_special_tokens=False)
 
-                score1 = self._joint_log_probability(sent1_token_ids)
-                score2 = self._joint_log_probability(sent2_token_ids)
+                score1 = self._joint_log_probability(sent1_token_ids, unconditional_start_token)
+                score2 = self._joint_log_probability(sent2_token_ids, unconditional_start_token)
 
                 N += 1
                 pair_score = 0
@@ -272,6 +301,11 @@ class CrowSPairsRunner:
                     ignore_index=True,
                 )
 
+        # Modified
+        if N == 0:
+            print(f"No valid samples found for bias type: {self._bias_type}. Skipping...")
+            return None
+
         print("=" * 100)
         print("Total examples:", N)
         print("Metric score:", round((stereo_score + antistereo_score) / N * 100, 2))
@@ -285,11 +319,24 @@ class CrowSPairsRunner:
         print("=" * 100)
         print()
 
-        return round((stereo_score + antistereo_score) / N * 100, 2)
+        # Pack all values into dict
+        results = {
+            "Total examples": N,
+            "Metric score": round((stereo_score + antistereo_score) / N * 100, 2),
+            "Stereotype score": round(stereo_score / total_stereo * 100, 2),
+            "Anti-stereotype score": round(antistereo_score / total_antistereo * 100, 2) if antistereo_score != 0 else None,
+            "Num. neutral": round(neutral / N * 100, 2),
+        }
+        return results
 
-    def _joint_log_probability(self, tokens):
+    def _joint_log_probability(self, tokens, unconditional_start_token):
+        # start_token = (
+        #     torch.tensor(self._tokenizer.encode("<|endoftext|>"))
+        #     .to(device)
+        #     .unsqueeze(0)
+        # )
         start_token = (
-            torch.tensor(self._tokenizer.encode("<|endoftext|>"))
+            torch.tensor(self._tokenizer.encode(unconditional_start_token))
             .to(device)
             .unsqueeze(0)
         )
@@ -313,7 +360,12 @@ class CrowSPairsRunner:
                 # 13 for gender
                 # 15 for race
                 # 13 for religion
-                bias_type_to_position = {"gender": 13, "race-color": 15, "religion": 13}
+                # bias_type_to_position = {"gender": 13, "race-color": 15, "religion": 13}
+
+                # Modified
+                # Get token length for debiasing prefix, token length differs for each model tokenizer
+                bias_type_to_position = get_self_debias_prefix_token_count(self._model_name_or_path)
+
 
                 # Get the first token prob.
                 probs = torch.softmax(
@@ -383,6 +435,7 @@ class CrowSPairsRunner:
         score = np.mean(probs)
 
         return score
+
 
     def _read_data(self, input_file):
         """Load data into pandas DataFrame format."""

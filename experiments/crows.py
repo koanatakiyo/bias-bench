@@ -27,9 +27,9 @@ parser.add_argument(
         "AlbertForMaskedLM",
         "RobertaForMaskedLM",
         "GPT2LMHeadModel",
-        "LlamaForCausalLM",  # Used for Llama 2 models
+        "LlamaForCausalLM",  # Used for Llama models
         "PhiForCausalLM", # Used for Phi models
-        "MistralForCausalLM",
+        "MistralForCausalLM", # Used for mistral models
     ],
     help="Model to evalute (e.g., BertForMaskedLM). Typically, these correspond to a HuggingFace "
     "class.",

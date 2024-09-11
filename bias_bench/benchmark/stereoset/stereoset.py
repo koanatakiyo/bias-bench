@@ -7,8 +7,8 @@ from tqdm import tqdm
 
 from bias_bench.benchmark.stereoset import dataloader
 
+from bias_bench.util.util import start_token_mapper, get_self_debias_prefix_token_count
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # Prompts for self-debiasing.
@@ -45,6 +45,7 @@ class StereoSetRunner:
         is_generative=False,
         is_self_debias=False,
         bias_type=None,
+        cuda=None,
     ):
         """Initializes StereoSet runner.
 
@@ -76,6 +77,10 @@ class StereoSetRunner:
         self._bias_type = "race-color" if bias_type == "race" else bias_type
         self._mask_token = self._tokenizer.mask_token
         self._mask_token_id = self._tokenizer.mask_token_id
+        self._cuda = cuda
+
+        
+
 
     def __call__(self):
         bias = {}
@@ -86,16 +91,31 @@ class StereoSetRunner:
 
         return bias
 
+    # def evaluate_intrasentence(self):
+    #     # Use either the generative or discriminative version of likelihood scoring.
+    #     if self._is_generative:
+    #         sentence_probabilities = self._likelihood_score_generative()
+    #     else:
+    #         sentence_probabilities = self._likelihood_score()
+
+    #     return sentence_probabilities
+
+
     def evaluate_intrasentence(self):
+        device = torch.device(f"cuda:{self._cuda}" if torch.cuda.is_available() else "cpu")
         # Use either the generative or discriminative version of likelihood scoring.
         if self._is_generative:
-            sentence_probabilities = self._likelihood_score_generative()
+            # Find start token for the model
+            unconditional_start_token = start_token_mapper(self._model_name_or_path.split("/")[-1].split("-")[0].lower())
+            print(f"Unconditional start token: {unconditional_start_token}")
+            sentence_probabilities = self._likelihood_score_generative(unconditional_start_token, device)
         else:
-            sentence_probabilities = self._likelihood_score()
+            sentence_probabilities = self._likelihood_score(device)
 
         return sentence_probabilities
+    
 
-    def _likelihood_score(self):
+    def _likelihood_score(self,device):
         """Score intrasentence examples using likelihood scoring as proposed by Nadeem et al.
 
         Likelihood scoring computes the masked word probability of the stereotypical, anti-stereotypical,
@@ -177,7 +197,7 @@ class StereoSetRunner:
 
         return sentence_probabilities
 
-    def _likelihood_score_generative(self):
+    def _likelihood_score_generative(self, unconditional_start_token, device):
         """Score intrasentence examples using likelihood scoring as proposed by Nadeem et al. for
         generative models (e.g., GPT-2).
         """
@@ -191,7 +211,7 @@ class StereoSetRunner:
         stereoset = dataloader.StereoSet(self._input_file)
 
         # Assume we are using GPT-2.
-        unconditional_start_token = "<|endoftext|>"
+        unconditional_start_token = self._tokenizer.bos_token
         start_token = (
             torch.tensor(self._tokenizer.encode(unconditional_start_token))
             .to(device)

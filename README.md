@@ -13,6 +13,16 @@ For tracking progress on the intrinsic bias benchmarks evaluated in this work, w
 git clone https://github.com/mcgill-nlp/bias-bench.git
 cd bias-bench 
 python -m pip install -e .
+transformers==4.33.0
+pip install transformers accelerate bitsandbytes
+export HF_HOME="/home/yandan/LLM-bias/transformers_cache"
+conda create -n myenv python "numpy>=1.22.3,<1.23.0" scipy
+python3.10
+pip install hf_transfer
+
+# pip install git+https://github.com/huggingface/transformersmers
+# pip install git+https://github.com/huggingface/transformers
+
 ```
 
 ## Required Datasets

@@ -3,8 +3,63 @@ from functools import partial
 import torch
 import transformers
 
+# from transformers import BitsAndBytesConfig
+
 from bias_bench.debias.self_debias.modeling import GPT2Wrapper
-from bias_bench.debias.self_debias.modeling import MaskedLMWrapper
+from bias_bench.debias.self_debias.modeling import MaskedLMWrapper\
+
+from pathlib import Path
+import os
+
+# get the model and tokenizer from huggingface
+try:
+    token_file = Path.home()/".cache"/"huggingface"/"token"
+    if token_file.exists():
+        with open(token_file, "r") as file:
+            hf_token = file.read().strip()
+except:
+    raise FileNotFoundError("Hugging Face token file not found. Please run 'huggingface-cli login'.")
+
+
+from huggingface_hub import login
+os.environ["HF_TOKEN"] = hf_token
+HF_TOKEN=os.getenv('HF_TOKEN')
+login(token=HF_TOKEN)
+
+
+# add new model caller
+class AutoModelForCausalLM:
+    """"To load huggingface models"""
+    def __new__(self, model_name_or_path):
+        # try:
+        return transformers.AutoModelForCausalLM.from_pretrained(model_name_or_path, return_dict=True,
+                                                                token=HF_TOKEN,
+                                                                # safe_serialization=True,
+                                                                local_files_only=True,
+                                                                cache_dir='/home/yandan/LLM-bias/transformers_cache',
+                                                                low_cpu_mem_usage=True,
+                                                                output_hidden_states=True).bfloat16()
+        # except:
+            # local_path = "../../transformers_cache/"+model_name_or_path
+        # return transformers.AutoModelForCausalLM.from_pretrained(model_name_or_path, return_dict=True,
+        #                                                              cache_dir='/home/yandan/LLM-bias/transformers_cache',
+        #                                                              output_hidden_states=True).bfloat16()
+
+# class PhiForCausalLM:
+#     def __new__(self, model_name_or_path):
+#         return transformers.PhiForCausalLM.from_pretrained(model_name_or_path, return_dict=True,
+#                                                            output_hidden_states=True).bfloat16()
+
+# class LlamaForCausalLM:
+#     def __new__(self, model_name_or_path):
+#         return transformers.LlamaForCausalLM.from_pretrained(model_name_or_path, return_dict=True,
+#                                                              output_hidden_states=True).bfloat16()
+
+class GPT2LMHeadModel:
+    def __new__(self, model_name_or_path):
+        return transformers.GPT2LMHeadModel.from_pretrained(model_name_or_path, return_dict=True,
+                                                             output_hidden_states=True).bfloat16()
+
 
 
 class BertModel:
@@ -42,9 +97,9 @@ class RobertaForMaskedLM:
         return transformers.RobertaForMaskedLM.from_pretrained(model_name_or_path)
 
 
-class GPT2LMHeadModel:
-    def __new__(self, model_name_or_path):
-        return transformers.GPT2LMHeadModel.from_pretrained(model_name_or_path)
+# class GPT2LMHeadModel:
+#     def __new__(self, model_name_or_path):
+#         return transformers.GPT2LMHeadModel.from_pretrained(model_name_or_path)
 
 
 class _SentenceDebiasModel:

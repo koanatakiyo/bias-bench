@@ -7,14 +7,15 @@ setup(
     url="https://github.com/mcgill-nlp/bias-bench",
     packages=["bias_bench"],
     install_requires=[
-        "torch==1.10.2",
-        "transformers==4.16.2",
-        "scipy==1.7.3",
-        "scikit-learn==1.0.2",
-        "nltk==3.7.0",
-        "datasets==1.18.3",
-        "accelerate==0.5.1",
+        # "numpy==1.22.4"
+        # "scipy==1.7.3",
+        # "scikit-learn==1.0.2",
+        # "nltk==3.7.0",
+        # "datasets==1.18.3",
+        # "accelerate==0.20.3",
+ 
     ],
     include_package_data=True,
     zip_safe=False,
 )
+# pip install torch==1.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html

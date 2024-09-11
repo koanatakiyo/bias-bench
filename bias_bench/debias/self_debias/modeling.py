@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
 
+
 import torch
 from torch.nn import CrossEntropyLoss
 from transformers import (
@@ -8,11 +9,18 @@ from transformers import (
     GPT2Tokenizer,
     PreTrainedTokenizer,
     PreTrainedModel,
-    AutoTokenizer,
+    # AutoTokenizer,
     AutoModelForMaskedLM,
     RobertaForMaskedLM,
     BertForMaskedLM,
     AlbertForMaskedLM,
+    AutoTokenizer, 
+    AutoModelForCausalLM,
+    # LlamaForCausalLM, # Added for llama models
+    # LlamaTokenizer,
+    # PhiForCausalLM, # Added for Phi models
+    # MistralForCausalLM, # Added for mistral 
+
 )
 
 from bias_bench.debias.self_debias.generation import (

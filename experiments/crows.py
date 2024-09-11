@@ -87,6 +87,7 @@ if __name__ == "__main__":
         bias_type=args.bias_type,
         is_generative=_is_generative(args.model),  # Affects model scoring.
         model_name_or_path=args.model_name_or_path, # Added to determine unconditional start token
+        cuda = args.cuda
     )
     results = runner()
 

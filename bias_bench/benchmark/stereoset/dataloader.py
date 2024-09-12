@@ -1,6 +1,7 @@
 import json
 import string
 from tqdm import tqdm
+import random
 
 
 class IntrasentenceLoader(object):
@@ -13,15 +14,19 @@ class IntrasentenceLoader(object):
         pad_to_max_length=False,
         input_file="../../data/bias.json",
         model_name_or_path=None,
+        percentage=100,
     ):
-        stereoset = StereoSet(input_file)
-        clusters = stereoset.get_intrasentence_examples()
+
         self._tokenizer = tokenizer
         self._sentences = []
         self._mask_token = self._tokenizer.mask_token
         self._max_seq_length = max_seq_length
         self._pad_to_max_length = pad_to_max_length
         self._model_name_or_path = model_name_or_path
+        self._percentage = percentage
+        stereoset = StereoSet(input_file, self._percentage)
+        clusters = stereoset.get_intrasentence_examples()
+
 
         for cluster in clusters:
             for sentence in cluster.sentences:
@@ -86,7 +91,7 @@ class IntrasentenceLoader(object):
 
 
 class StereoSet(object):
-    def __init__(self, location, json_obj=None):
+    def __init__(self, location, percentage, json_obj=None):
         """Instantiates the StereoSet object.
 
         Args:
@@ -98,10 +103,17 @@ class StereoSet(object):
                 self.json = json.load(f)
         else:
             self.json = json_obj
-
+        self.percentage = percentage
         self.version = self.json["version"]
+        
+        create_json = self.json["data"]["intrasentence"]
+
+        if self.percentage != 100:
+            sample_size = int(len(create_json) * (self.percentage / 100))
+            create_json = random.sample(create_json, sample_size)
+
         self.intrasentence_examples = self.__create_intrasentence_examples__(
-            self.json["data"]["intrasentence"]
+            create_json
         )
 
     def __create_intrasentence_examples__(self, examples):

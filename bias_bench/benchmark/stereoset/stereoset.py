@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from bias_bench.benchmark.stereoset import dataloader
 
-from bias_bench.util.util import start_token_mapper, get_self_debias_prefix_token_count
+from bias_bench.util.util import get_self_debias_prefix_token_count
 
 
 
@@ -45,7 +45,9 @@ class StereoSetRunner:
         is_generative=False,
         is_self_debias=False,
         bias_type=None,
+        # model_start_token=None,
         cuda=None,
+        percentage=100,
     ):
         """Initializes StereoSet runner.
 
@@ -64,6 +66,8 @@ class StereoSetRunner:
             is_self_debias (`bool`): Whether we are using a model with self-debiasing or not.
             bias_type (`str`): Bias type for self-debiasing. Determines which prompts are given
                 to the model.
+            model_start_token: The start token
+            cuda: the cuda device
         """
         self._intrasentence_model = intrasentence_model
         self._tokenizer = tokenizer
@@ -77,7 +81,9 @@ class StereoSetRunner:
         self._bias_type = "race-color" if bias_type == "race" else bias_type
         self._mask_token = self._tokenizer.mask_token
         self._mask_token_id = self._tokenizer.mask_token_id
+        # self._model_start_token=model_start_token
         self._cuda = cuda
+        self._percentage = percentage
 
         
 
@@ -91,14 +97,6 @@ class StereoSetRunner:
 
         return bias
 
-    # def evaluate_intrasentence(self):
-    #     # Use either the generative or discriminative version of likelihood scoring.
-    #     if self._is_generative:
-    #         sentence_probabilities = self._likelihood_score_generative()
-    #     else:
-    #         sentence_probabilities = self._likelihood_score()
-
-    #     return sentence_probabilities
 
 
     def evaluate_intrasentence(self):
@@ -106,9 +104,10 @@ class StereoSetRunner:
         # Use either the generative or discriminative version of likelihood scoring.
         if self._is_generative:
             # Find start token for the model
-            unconditional_start_token = start_token_mapper(self._model_name_or_path.split("/")[-1].split("-")[0].lower())
-            print(f"Unconditional start token: {unconditional_start_token}")
-            sentence_probabilities = self._likelihood_score_generative(unconditional_start_token, device)
+            # unconditional_start_token = start_token_mapper(self._model_name_or_path.split("/")[-1].split("-")[0].lower())
+            # unconditional_start_token = self._model_start_token
+            # print(f"Unconditional start token: {unconditional_start_token}")
+            sentence_probabilities = self._likelihood_score_generative(device)
         else:
             sentence_probabilities = self._likelihood_score(device)
 
@@ -135,6 +134,7 @@ class StereoSetRunner:
             pad_to_max_length=pad_to_max_length,
             input_file=self._input_file,
             model_name_or_path=self._model_name_or_path,
+            percentage=self._percentage
         )
 
         loader = DataLoader(dataset, batch_size=self._batch_size)
@@ -197,7 +197,7 @@ class StereoSetRunner:
 
         return sentence_probabilities
 
-    def _likelihood_score_generative(self, unconditional_start_token, device):
+    def _likelihood_score_generative(self, device):
         """Score intrasentence examples using likelihood scoring as proposed by Nadeem et al. for
         generative models (e.g., GPT-2).
         """
@@ -208,7 +208,7 @@ class StereoSetRunner:
             model = self._intrasentence_model.to(device)
 
         # Load the dataset.
-        stereoset = dataloader.StereoSet(self._input_file)
+        stereoset = dataloader.StereoSet(self._input_file, self._percentage)
 
         # Assume we are using GPT-2.
         unconditional_start_token = self._tokenizer.bos_token
@@ -280,7 +280,7 @@ class StereoSetRunner:
                         joint_sentence_probability = [
                             initial_token_probabilities[0, 0, tokens[0]].item()
                         ]
-
+                        # output size is (1, token numbers, vocab)
                         output = torch.softmax(model(tokens_tensor)[0], dim=-1)
 
                 if self._is_self_debias:

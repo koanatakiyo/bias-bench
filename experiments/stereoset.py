@@ -8,8 +8,8 @@ from bias_bench.benchmark.stereoset import StereoSetRunner
 from bias_bench.model import models
 from bias_bench.util import generate_experiment_id, _is_generative
 
-from transformers import AutoModelForCausalLM, AutoTokenizer
-from transformers import BitsAndBytesConfig
+# from transformers import AutoModelForCausalLM, AutoTokenizer
+# from transformers import BitsAndBytesConfig
 
 # the cached model
 os.environ['TRANSFORMERS_CACHE'] = '/home/yandan/LLM-bias/transformers_cache'
@@ -70,16 +70,26 @@ parser.add_argument(
     help="choose cuda device",
 )
 
+
+parser.add_argument(
+    "--percentage",
+    type=int,
+    default=100,
+    help="choose train percentage",
+)
+
+
 if __name__ == "__main__":
 
     # wandb.init(project="wts", name=f"{args.benchmark}_{args.category}_{args.method}", reinit=True)
 
     args = parser.parse_args()
 
+    model_short_name = args.model_name_or_path.split("/")[0]
+
     experiment_id = generate_experiment_id(
         name="stereoset",
-        # model=args.model,
-        model_name_or_path=args.model_name_or_path,
+        model_name_or_path=model_short_name,
         seed=args.seed,
     )
 
@@ -90,6 +100,7 @@ if __name__ == "__main__":
     print(f" - batch_size: {args.batch_size}")
     print(f" - seed: {args.seed}")
     print(f" - cuda: {args.cuda}")
+    print(f" - percentage: {args.percentage}")
     
     # try_model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path).bfloat16()
 
@@ -99,7 +110,7 @@ if __name__ == "__main__":
     model.eval()
     tokenizer = transformers.AutoTokenizer.from_pretrained(args.model_name_or_path)
 
-    print(tokenizer.bos_token)
+    # model_start_token = tokenizer.bos_token
 
     runner = StereoSetRunner(
         intrasentence_model=model,
@@ -108,10 +119,13 @@ if __name__ == "__main__":
         model_name_or_path=args.model_name_or_path,
         batch_size=args.batch_size,
         is_generative=_is_generative(args.model_name_or_path),
-        cuda=args.cuda
+        cuda=args.cuda,
+        percentage=args.percentage,
+
     )
     results = runner()
 
+        
     os.makedirs(f"{args.persistent_dir}/results/stereoset", exist_ok=True)
     with open(
         f"{args.persistent_dir}/results/stereoset/{experiment_id}.json", "w"

@@ -34,10 +34,8 @@ class AutoModelForCausalLM:
         # try:
         return transformers.AutoModelForCausalLM.from_pretrained(model_name_or_path, return_dict=True,
                                                                 token=HF_TOKEN,
-                                                                # safe_serialization=True,
-                                                                local_files_only=True,
                                                                 cache_dir='/home/yandan/LLM-bias/transformers_cache',
-                                                                low_cpu_mem_usage=True,
+                                                                trust_remote_code=True,
                                                                 output_hidden_states=True).bfloat16()
         # except:
             # local_path = "../../transformers_cache/"+model_name_or_path

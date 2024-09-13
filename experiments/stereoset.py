@@ -24,20 +24,7 @@ parser.add_argument(
     default=os.path.realpath(os.path.join(thisdir, "..")),
     help="Directory where all persistent data will be stored.",
 )
-# parser.add_argument(
-#     "--model",
-#     action="store",
-#     type=str,
-#     default="BertForMaskedLM",
-#     choices=[
-#         "BertForMaskedLM",
-#         "AlbertForMaskedLM",
-#         "RobertaForMaskedLM",
-#         "GPT2LMHeadModel",
-#     ],
-#     help="Model to evalute (e.g., BertForMaskedLM). Typically, these correspond to a HuggingFace "
-#     "class.",
-# )
+
 parser.add_argument(
     "--model_name_or_path",
     action="store",
@@ -85,7 +72,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    model_short_name = args.model_name_or_path.split("/")[0]
+    model_short_name = args.model_name_or_path.split("/")[1].split("-")[0]
 
     experiment_id = generate_experiment_id(
         name="stereoset",
@@ -106,7 +93,6 @@ if __name__ == "__main__":
 
 
     model = getattr(models, "AutoModelForCausalLM")(args.model_name_or_path)
-    # model = getattr(models, "LlamaForCausalLM")(args.model_name_or_path)
     model.eval()
     tokenizer = transformers.AutoTokenizer.from_pretrained(args.model_name_or_path)
 
@@ -121,7 +107,6 @@ if __name__ == "__main__":
         is_generative=_is_generative(args.model_name_or_path),
         cuda=args.cuda,
         percentage=args.percentage,
-
     )
     results = runner()
 

@@ -4,10 +4,18 @@ import glob
 import json
 import os
 import re
+import wandb
+
+import transformers
 
 import numpy as np
 
 from bias_bench.benchmark.stereoset import dataloader
+from bias_bench.benchmark.stereoset import StereoSetRunner
+from bias_bench.model import models
+from bias_bench.util import generate_experiment_id, _is_generative
+
+os.environ['TRANSFORMERS_CACHE'] = '/home/yandan/LLM-bias/transformers_cache'
 
 
 thisdir = os.path.dirname(os.path.realpath(__file__))
@@ -21,31 +29,51 @@ parser.add_argument(
     default=os.path.realpath(os.path.join(thisdir, "..")),
     help="Directory where all persistent data will be stored.",
 )
+
+
 parser.add_argument(
-    "--predictions_file",
+    "--model_name_or_path",
     action="store",
     type=str,
-    default=None,
-    help="Path to the file containing the model predictions.",
-)
-parser.add_argument(
-    "--predictions_dir",
-    action="store",
-    type=str,
-    default=None,
-    help="Path to the directory containing a set of model predictions.",
-)
-parser.add_argument(
-    "--output_file",
-    action="store",
-    type=str,
-    default=None,
-    help="Path to save the results to.",
+    default="bert-base-uncased",
+    # choices=["bert-base-uncased", "albert-base-v2", "roberta-base", "gpt2"],
+    help="HuggingFace model name or path (e.g., bert-base-uncased). Checkpoint from which a "
+    "model is instantiated.",
 )
 
+parser.add_argument(
+    "--cuda",
+    type=str,
+    default="0",
+    choices=["0", "1", "2", "3", "4", "5", "6", "7"],
+    help="choose cuda device",
+)
+
+parser.add_argument(
+    "--percentage",
+    type=int,
+    default=100,
+    help="choose train percentage",
+)
+
+parser.add_argument(
+    "--seed",
+    action="store",
+    type=int,
+    default=None,
+    help="RNG seed. Used for logging in experiment ID.",
+)
+
+parser.add_argument(
+    "--batch_size",
+    action="store",
+    type=int,
+    default=1,
+    help="The batch size to use during StereoSet intrasentence evaluation.",
+)
 
 class ScoreEvaluator:
-    def __init__(self, gold_file_path, predictions_file_path):
+    def __init__(self, dataset, model_result, percentage=None):
         """Evaluates the results of a StereoSet predictions file with respect to the gold label file.
 
         Args:
@@ -56,7 +84,9 @@ class ScoreEvaluator:
             Overall, a dictionary of composite scores for the intrasentence task.
         """
         # Cluster ID, gold_label to sentence ID.
-        stereoset = dataloader.StereoSet(gold_file_path)
+        self.percentage = percentage
+        # stereoset = dataloader.StereoSet(gold_file_path, self.percentage)
+        stereoset = dataset
         self.intrasentence_examples = stereoset.get_intrasentence_examples()
         self.id2term = {}
         self.id2gold = {}
@@ -65,9 +95,11 @@ class ScoreEvaluator:
         self.domain2example = {
             "intrasentence": defaultdict(lambda: []),
         }
+        
+        self.predictions = model_result
+        # with open(predictions_file_path) as f:
+        #     self.predictions = json.load(f)
 
-        with open(predictions_file_path) as f:
-            self.predictions = json.load(f)
 
         for example in self.intrasentence_examples:
             for sentence in example.sentences:
@@ -180,65 +212,76 @@ class ScoreEvaluator:
         return results
 
 
-def parse_file(gold_file, predictions_file):
+def parse_file(stereoset, model_result, percentage_num):
     score_evaluator = ScoreEvaluator(
-        gold_file_path=gold_file, predictions_file_path=predictions_file
+        dataset=stereoset, model_result=model_result, percentage=percentage_num
     )
     overall = score_evaluator.get_overall_results()
     score_evaluator.pretty_print(overall)
 
-    if args.output_file:
-        output_file = args.output_file
-    elif args.predictions_dir != None:
-        predictions_dir = args.predictions_dir
-        if predictions_dir[-1] == "/":
-            predictions_dir = predictions_dir[:-1]
-        output_file = f"{predictions_dir}.json"
-    else:
-        output_file = "results.json"
-
-    if os.path.exists(output_file):
-        with open(output_file, "r") as f:
-            d = json.load(f)
-    else:
-        d = {}
-
-    # Extract the experiment ID from the file path.
-    file_name = os.path.basename(predictions_file)
-    experiment_id = os.path.splitext(file_name)[0]
-    d[experiment_id] = overall
-
-    with open(output_file, "w+") as f:
-        json.dump(d, f, indent=2)
-
-
-def _extract_split_from_file_path(file_path):
-    # Parse the experiment ID.
-    prediction_file_name = os.path.basename(file_path)
-    experiment_id = os.path.splitext(prediction_file_name)[0]
-    split = re.match(".*_d-([A-Za-z-]+).*", experiment_id).groups()[0]
-    return split
+    try:
+        # wandb.log({"result": overall})
+        print(overall)
+    except:
+        raise NotImplementedError("No record")
 
 
 if __name__ == "__main__":
     args = parser.parse_args()
 
     print("Evaluating StereoSet files:")
-    print(f" - predictions_file: {args.predictions_file}")
-    print(f" - predictions_dir: {args.predictions_dir}")
-    print(f" - output_file: {args.output_file}")
+    print(f" - model_name: {args.model_name_or_path}")
+    print(f" - cuda: {args.cuda}")
+    print(f" - percentage: {args.percentage}")
+    print(f" - seed: {args.seed}")
 
-    if args.predictions_dir is not None:
-        predictions_dir = args.predictions_dir
-        if args.predictions_dir[-1] != "/":
-            predictions_dir = args.predictions_dir + "/"
-        for prediction_file in glob.glob(predictions_dir + "*.json"):
-            print()
-            print(f"Evaluating {prediction_file}...")
-            parse_file(
-                f"{args.persistent_dir}/data/stereoset/test.json", prediction_file
+
+    model_short_name = args.model_name_or_path.split("/")[1].split("-")[0]
+
+    experiment_id = generate_experiment_id(
+        name="stereoset",
+        model_name_or_path=model_short_name,
+        seed=args.seed,
+    )
+
+    # wandb.init(project="bias_bench", name=experiment_id, reinit=True)
+    # wandb.config.update(args)
+
+    model = getattr(models, "AutoModelForCausalLM")(args.model_name_or_path)
+    model.eval()
+    tokenizer = transformers.AutoTokenizer.from_pretrained(args.model_name_or_path)
+
+
+    runner = StereoSetRunner(
+        intrasentence_model=model,
+        tokenizer=tokenizer,
+        input_file=f"{args.persistent_dir}/data/stereoset/test.json",
+        model_name_or_path=args.model_name_or_path,
+        batch_size=args.batch_size,
+        is_generative=_is_generative(args.model_name_or_path),
+        cuda=args.cuda,
+        percentage=args.percentage,
+
+    )
+
+    results, stereoset = runner()
+
+    parse_file(
+                stereoset, results, args.percentage
             )
-    else:
-        parse_file(
-            f"{args.persistent_dir}/data/stereoset/test.json", args.predictions_file
-        )
+
+
+    # if args.predictions_dir is not None:
+    #     predictions_dir = args.predictions_dir
+    #     if args.predictions_dir[-1] != "/":
+    #         predictions_dir = args.predictions_dir + "/"
+    #     for prediction_file in glob.glob(predictions_dir + "*.json"):
+    #         print()
+    #         print(f"Evaluating {prediction_file}...")
+    #         parse_file(
+    #             f"{args.persistent_dir}/data/stereoset/test.json", prediction_file, args.percentage
+    #         )
+    # else:
+    #     parse_file(
+    #         f"{args.persistent_dir}/data/stereoset/test.json", args.predictions_file, args.percentage
+    #     )

@@ -92,10 +92,10 @@ class StereoSetRunner:
         bias = {}
 
         print("Evaluating intrasentence task.")
-        intrasentence_bias = self.evaluate_intrasentence()
+        intrasentence_bias, stereoset_data = self.evaluate_intrasentence()
         bias["intrasentence"] = intrasentence_bias
 
-        return bias
+        return bias, stereoset_data
 
 
 
@@ -103,15 +103,18 @@ class StereoSetRunner:
         device = torch.device(f"cuda:{self._cuda}" if torch.cuda.is_available() else "cpu")
         # Use either the generative or discriminative version of likelihood scoring.
         if self._is_generative:
+            stereoset_data = None
             # Find start token for the model
             # unconditional_start_token = start_token_mapper(self._model_name_or_path.split("/")[-1].split("-")[0].lower())
             # unconditional_start_token = self._model_start_token
             # print(f"Unconditional start token: {unconditional_start_token}")
-            sentence_probabilities = self._likelihood_score_generative(device)
+            sentence_probabilities, stereoset_data = self._likelihood_score_generative(device)
+            assert stereoset_data is not None
         else:
-            sentence_probabilities = self._likelihood_score(device)
+            sentence_probabilities, stereoset_data = self._likelihood_score(device)
+            assert stereoset_data is not None
 
-        return sentence_probabilities
+        return sentence_probabilities, stereoset_data
     
 
     def _likelihood_score(self,device):
@@ -228,6 +231,18 @@ class StereoSetRunner:
                 initial_token_probabilities[0], dim=-1
             )
 
+            # assert initial_token_probabilities.data.size()[1] <= 2
+
+            initial_token_num = initial_token_probabilities.data.size()[1] 
+
+            if initial_token_num > 1: # if the token num bigger then 1
+                print(f"initial token number: {initial_token_num}")
+                initial_p = initial_token_probabilities[:,0,:]
+                for num_i in range(1, initial_token_num):
+                    initial_p = initial_p * initial_token_probabilities[:,num_i,:]
+                
+                initial_token_probabilities = initial_p.unsqueeze(0)            
+
             # Ensure that our batch size is 1 and that our inital token isn't split into subwords.
             assert initial_token_probabilities.shape[0] == 1
             assert initial_token_probabilities.shape[1] == 1
@@ -307,7 +322,7 @@ class StereoSetRunner:
 
                 predictions.append(probabilities)
 
-        return predictions
+        return predictions, stereoset
 
     def count_parameters(self, model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)

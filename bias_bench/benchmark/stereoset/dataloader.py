@@ -108,6 +108,7 @@ class StereoSet(object):
         
         create_json = self.json["data"]["intrasentence"]
 
+        # certain percentage of data
         if self.percentage != 100:
             sample_size = int(len(create_json) * (self.percentage / 100))
             create_json = random.sample(create_json, sample_size)

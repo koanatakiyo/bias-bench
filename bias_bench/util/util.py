@@ -27,7 +27,7 @@ def get_self_debias_prefix_token_count(model_name):
 
 def _is_generative(model_path):
     # Checks if we are running an autoregressive model.
-    model_list = ["gpt", "llama", "mistrial", "phi"]
+    model_list = ["gpt", "llama", "mistral", "phi"]
     for model_name in model_list: 
         if model_path.lower().find(model_name) != -1:
             return True

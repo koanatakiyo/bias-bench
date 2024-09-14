@@ -15,7 +15,7 @@ cd bias-bench
 python -m pip install -e .
 transformers==4.38.2
 pip install transformers accelerate
-export HF_HOME="/home/yandan/LLM-bias/transformers_cache"
+export HF_HOME="/home/../LLM-bias/transformers_cache"
 conda create -n myenv python "numpy>=1.22.3,<1.23.0" scipy
 python3.10
 pip install hf_transfer

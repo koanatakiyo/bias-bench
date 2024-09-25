@@ -49,10 +49,10 @@ class Generator(ABC):
     def response_generator(self, input: str): pass 
 
 class Private_Generator(Generator):
-    def __init__(self, model_name_or_path:str, cuda: str):
+    def __init__(self, model_name_or_path:str):
         super().__init__()
         self._model_name_or_path = model_name_or_path
-        self._cuda = cuda
+        # self._cuda = cuda
         # self.device = torch.device(f"cuda:{self._cuda}" if torch.cuda.is_available() else "cpu")
 
         if "70b" not in self._model_name_or_path.lower():
@@ -66,7 +66,7 @@ class Private_Generator(Generator):
                                                         ).bfloat16()
             
         else: 
-            quant_config = transformers.BitsAndBytesConfig(
+            quant_config = transformers.BitsAndBytesConfig( # NF4 quantization
                 load_in_4bit=True,
                 bnb_4bit_quant_type="nf4",
                 bnb_4bit_use_double_quant=True,

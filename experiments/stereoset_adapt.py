@@ -97,6 +97,7 @@ def main():
     from bias_bench.benchmark.stereoset import StereoSetRunner
     from bias_bench.model import models
     from bias_bench.adaptation import prompt_strings
+    import torch
 
 
     model_short_name = args.model_name.split("/")[1].split("-")[0]
@@ -114,10 +115,10 @@ def main():
 
     stereoset_path = "data/stereoset/test.json"
 
-    # visible_cuda_num = torch.cuda.device_count() # the to device cuda
-
-    # for i in range(visible_cuda_num):
-    #     device
+    visible_cuda_num = torch.cuda.device_count() # the to device cuda
+    devices = []
+    for i in range(visible_cuda_num):
+        devices += [torch.device(f"cuda:{i}")]
 
     try:
         with open(stereoset_path, 'r') as file:
@@ -135,7 +136,8 @@ def main():
     if args.bias_type is not None:
         stereoset_data = [item for item in stereoset_data if item["bias_type"] == args.bias_type]
 
-    generator = models.Private_Generator(args.model_name, to_device_cuda)
+    # generator = models.Private_Generator(args.model_name, to_device_cuda)
+    generator = models.Private_Generator(args.model_name)
     
     # prompt generate
     # add in if the prompt is not working

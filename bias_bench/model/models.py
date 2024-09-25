@@ -2,15 +2,20 @@ from functools import partial
 
 import torch
 import transformers
+# from transformers import BitsAndBytesConfig, AutoModelForCausalLM, AutoTokenizer
 
-# from transformers import BitsAndBytesConfig
+from peft import LoraConfig, get_peft_model
+
+
+from abc import ABC, abstractmethod
 
 from bias_bench.debias.self_debias.modeling import GPT2Wrapper
-from bias_bench.debias.self_debias.modeling import MaskedLMWrapper\
+from bias_bench.debias.self_debias.modeling import MaskedLMWrapper
 
 from pathlib import Path
 import os
 
+# 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
 # get the model and tokenizer from huggingface
 try:
     token_file = Path.home()/".cache"/"huggingface"/"token"
@@ -33,72 +38,66 @@ class AutoModelForCausalLM:
     def __new__(self, model_name_or_path):
         # try:
         return transformers.AutoModelForCausalLM.from_pretrained(model_name_or_path, return_dict=True,
-                                                                token=HF_TOKEN,
-                                                                cache_dir='/home/yandan/LLM-bias/transformers_cache',
-                                                                trust_remote_code=True,
-                                                                output_hidden_states=True).bfloat16()
-        # except:
-            # local_path = "../../transformers_cache/"+model_name_or_path
-        # return transformers.AutoModelForCausalLM.from_pretrained(model_name_or_path, return_dict=True,
-        #                                                              cache_dir='/home/yandan/LLM-bias/transformers_cache',
-        #                                                              output_hidden_states=True).bfloat16()
-
-# class PhiForCausalLM:
-#     def __new__(self, model_name_or_path):
-#         return transformers.PhiForCausalLM.from_pretrained(model_name_or_path, return_dict=True,
-#                                                            output_hidden_states=True).bfloat16()
-
-# class LlamaForCausalLM:
-#     def __new__(self, model_name_or_path):
-#         return transformers.LlamaForCausalLM.from_pretrained(model_name_or_path, return_dict=True,
-#                                                              output_hidden_states=True).bfloat16()
-
-class GPT2LMHeadModel:
-    def __new__(self, model_name_or_path):
-        return transformers.GPT2LMHeadModel.from_pretrained(model_name_or_path, return_dict=True,
-                                                             output_hidden_states=True).bfloat16()
+                                                                 token=HF_TOKEN,
+                                                                 cache_dir='/data/yandan/transformers_cache',
+                                                                # trust_remote_code=True,
+                                                                 output_hidden_states=True).bfloat16()
 
 
+class Generator(ABC):
+    @abstractmethod
+    def response_generator(self, input: str): pass 
 
-class BertModel:
-    def __new__(self, model_name_or_path):
-        return transformers.BertModel.from_pretrained(model_name_or_path)
+class Private_Generator(Generator):
+    def __init__(self, model_name_or_path:str, cuda: str):
+        super().__init__()
+        self._model_name_or_path = model_name_or_path
+        self._cuda = cuda
+        # self.device = torch.device(f"cuda:{self._cuda}" if torch.cuda.is_available() else "cpu")
 
+        if "70b" not in self._model_name_or_path.lower():
 
-class AlbertModel:
-    def __new__(self, model_name_or_path):
-        return transformers.AlbertModel.from_pretrained(model_name_or_path)
+            self.model = transformers.AutoModelForCausalLM.from_pretrained(
+                                                        self._model_name_or_path, 
+                                                        cache_dir='/data/yandan/transformers_cache', 
+                                                        trust_remote_code=True,
+                                                        output_hidden_states=True,
+                                                        device_map="auto",
+                                                        ).bfloat16()
+            
+        else: 
+            quant_config = transformers.BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type="nf4",
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_compute_dtype=torch.bfloat16,
+            )
 
+            # Load in 4 bits
+            self.model = transformers.AutoModelForCausalLM.from_pretrained(
+                self._model_name_or_path, 
+                cache_dir='/data/yandan/transformers_cache', 
+                device_map="auto",  # Automatically distribute the model across available GPUs
+                quantization_config = quant_config
+            )
+            print(f"Model is loaded on {self.model.device}")
+        
+        self.tokenizer = transformers.AutoTokenizer.from_pretrained(self._model_name_or_path)
+        self.device = self.model.device
+        
 
-class RobertaModel:
-    def __new__(self, model_name_or_path):
-        return transformers.RobertaModel.from_pretrained(model_name_or_path)
+    def response_generator(self, input, max_new_tokens=256):
+        # device = torch.device(f"cuda:{self._cuda}" if torch.cuda.is_available() else "cpu")
+        prompt_input =  self.tokenizer(input, return_tensors="pt").to(self.device)
+        outputs = self.model.generate(**prompt_input, pad_token_id=self.tokenizer.eos_token_id, max_new_tokens=max_new_tokens)
 
+        self.input_length = prompt_input.input_ids.shape[1]
+        generated_tokens = outputs[:, self.input_length:]
+        decoded = self.tokenizer.batch_decode(generated_tokens, skip_special_tokens=True)
+        
+        return decoded
 
-class GPT2Model:
-    def __new__(self, model_name_or_path):
-        return transformers.GPT2Model.from_pretrained(model_name_or_path)
-
-
-class BertForMaskedLM:
-    def __new__(self, model_name_or_path):
-        return transformers.BertForMaskedLM.from_pretrained(model_name_or_path)
-
-
-class AlbertForMaskedLM:
-    def __new__(self, model_name_or_path):
-        return transformers.AlbertForMaskedLM.from_pretrained(model_name_or_path)
-
-
-class RobertaForMaskedLM:
-    def __new__(self, model_name_or_path):
-        return transformers.RobertaForMaskedLM.from_pretrained(model_name_or_path)
-
-
-# class GPT2LMHeadModel:
-#     def __new__(self, model_name_or_path):
-#         return transformers.GPT2LMHeadModel.from_pretrained(model_name_or_path)
-
+        
 
 class _SentenceDebiasModel:
     def __init__(self, model_name_or_path, bias_direction):

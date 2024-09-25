@@ -18,9 +18,9 @@
                 // "--predictions_file", "../results/stereoset/stereoset_c-microsoft_s-42.json", 
                 // "--output_file", "../results/stereoset_processed/try.json", 
                 // "--batch_size", "1",
-                "--seed", "42", 
-                "--cuda", "2", "--model_name", "mistralai/Mistral-7B-Instruct-v0.3",
-                "--percentage", "5",
+                "--seed", "42", "--intra_inter", "intersentence",
+                "--cuda", "6,7", "--model_name", "meta-llama/Meta-Llama-3-70B",
+                "--percentage", "0.1", 
             ]
         }
     ]

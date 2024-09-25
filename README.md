@@ -13,9 +13,11 @@ For tracking progress on the intrinsic bias benchmarks evaluated in this work, w
 git clone https://github.com/mcgill-nlp/bias-bench.git
 cd bias-bench 
 python -m pip install -e .
-transformers==4.38.2
+transformers==4.38.2 // 4.44.0
 pip install transformers accelerate
 export HF_HOME="/home/../LLM-bias/transformers_cache"
+
+
 conda create -n myenv python "numpy>=1.22.3,<1.23.0" scipy
 python3.10
 pip install hf_transfer
@@ -24,10 +26,10 @@ pip install sentencepiece
 pip install flash_attn
 pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu118
 
-
-# pip install git+https://github.com/huggingface/transformersmers
-# pip install git+https://github.com/huggingface/transformers
-
+# HF model
+export HF_HUB_ENABLE_HF_TRANSFER=1
+model_name="meta-llama/Meta-Llama-3-70B"
+huggingface-cli download $model_name --cache-dir /home/../LLM-bias/transformers_cache
 ```
 
 ## Required Datasets

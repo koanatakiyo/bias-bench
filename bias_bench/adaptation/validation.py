@@ -1,4 +1,5 @@
 from bias_bench.adaptation import prompt_strings
+import re
 
 def validate_response(original_sample, response, generator, results, retry_count, generated_templates):
     if retry_count == 0:
@@ -220,3 +221,12 @@ The target should only be a couple of words and cannot contain any special chara
     # If reach the end, add the new template to the set and return the results
     generated_templates.add(results['sentence_template'])
     return results
+
+
+
+
+def validate_response(original_sample, response, generator, results, retry_count, generated_templates):
+    if retry_count == 0:
+        print("Failed to validate response. Skipping sample...")
+        print(response)
+        return None

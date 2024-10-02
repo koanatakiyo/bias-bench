@@ -56,6 +56,13 @@ class Private_Generator(Generator):
         # self.device = torch.device(f"cuda:{self._cuda}" if torch.cuda.is_available() else "cpu")
 
         if "70b" not in self._model_name_or_path.lower():
+            
+            quant_config = transformers.BitsAndBytesConfig( # NF4 quantization
+                load_in_8bit=True,
+                # bnb_4bit_quant_type="nf4",
+                # bnb_4bit_use_double_quant=True,
+                # bnb_4bit_compute_dtype=torch.bfloat16,
+            )
 
             self.model = transformers.AutoModelForCausalLM.from_pretrained(
                                                         self._model_name_or_path, 
@@ -63,7 +70,10 @@ class Private_Generator(Generator):
                                                         trust_remote_code=True,
                                                         output_hidden_states=True,
                                                         device_map="auto",
-                                                        ).bfloat16()
+                                                        # load_in_8bit=True,
+                                                        quantization_config = quant_config
+                                                        )
+                                                        # ).bfloat16()
             
         else: 
             quant_config = transformers.BitsAndBytesConfig( # NF4 quantization
@@ -86,10 +96,14 @@ class Private_Generator(Generator):
         self.device = self.model.device
         
 
-    def response_generator(self, input, max_new_tokens=256):
+    def response_generator(self, input, max_new_tokens=500):
         # device = torch.device(f"cuda:{self._cuda}" if torch.cuda.is_available() else "cpu")
         prompt_input =  self.tokenizer(input, return_tensors="pt").to(self.device)
+        token_count = len(prompt_input.encodings[0].words) # calculate the token between different inputs
+        print("the token count is:", token_count)
         outputs = self.model.generate(**prompt_input, pad_token_id=self.tokenizer.eos_token_id, max_new_tokens=max_new_tokens)
+        # outputs = self.model.generate(**prompt_input, pad_token_id=self.tokenizer.eos_token_id)
+
 
         self.input_length = prompt_input.input_ids.shape[1]
         generated_tokens = outputs[:, self.input_length:]
@@ -542,25 +556,25 @@ class DropoutGPT2ForSequenceClassification:
         return model
 
 
-class SelfDebiasBertForMaskedLM:
-    def __new__(self, model_name_or_path):
-        model = MaskedLMWrapper(model_name_or_path)
-        return model
+# class SelfDebiasBertForMaskedLM:
+#     def __new__(self, model_name_or_path):
+#         model = MaskedLMWrapper(model_name_or_path)
+#         return model
 
 
-class SelfDebiasAlbertForMaskedLM:
-    def __new__(self, model_name_or_path):
-        model = MaskedLMWrapper(model_name_or_path)
-        return model
+# class SelfDebiasAlbertForMaskedLM:
+#     def __new__(self, model_name_or_path):
+#         model = MaskedLMWrapper(model_name_or_path)
+#         return model
 
 
-class SelfDebiasRobertaForMaskedLM:
-    def __new__(self, model_name_or_path):
-        model = MaskedLMWrapper(model_name_or_path)
-        return model
+# class SelfDebiasRobertaForMaskedLM:
+#     def __new__(self, model_name_or_path):
+#         model = MaskedLMWrapper(model_name_or_path)
+#         return model
 
 
-class SelfDebiasGPT2LMHeadModel:
-    def __new__(self, model_name_or_path):
-        model = GPT2Wrapper(model_name_or_path, use_cuda=False)
-        return model
+# class SelfDebiasGPT2LMHeadModel:
+#     def __new__(self, model_name_or_path):
+#         model = GPT2Wrapper(model_name_or_path, use_cuda=False)
+#         return model

@@ -18,13 +18,14 @@ pip install transformers accelerate
 export HF_HOME="/home/../LLM-bias/transformers_cache"
 
 
-conda create -n myenv python "numpy>=1.22.3,<1.23.0" scipy
+conda create -n bias python "numpy>=1.22.3,<1.23.0" scipy
 python3.10
+pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu118
+
 pip install hf_transfer
 pip install accelerate
 pip install sentencepiece
-pip install flash_attn
-pip install torch==2.0.0 torchvision==0.15.1 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cu118
+pip install flash_attn (FLASH_ATTENTION_FORCE_BUILD=TRUE pip install flash-attn)
 
 # HF model
 export HF_HUB_ENABLE_HF_TRANSFER=1

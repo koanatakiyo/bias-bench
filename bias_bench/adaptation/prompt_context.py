@@ -35,14 +35,17 @@ def get_stereo_context(bias_type):
         7. University graduates: Business and Administration remained the most common field for both genders, but was more prevalent among female graduates. Engineering Sciences remained male-dominated, while Humanities & Social Sciences had a higher proportion of female graduates.
         8. Fertility trends: More highly educated women tended to have fewer children on average, with a decrease in the average number of children born to ever-married women aged 40-49 over the past decade.
         9. Singles by gender: Singlehood was more common among females university graduates than males. However, singlehood was more common for males than females as a whole.""".strip(),
-                # source: https://www.mas.gov.sg/development/why-singapore
+                # source: https://tablebuilder.singstat.gov.sg/table/TS/M182081#!
+                # Employed Residents Aged 15 Years And Over By Industry And Occupation, (June)
                 'profession': """
         Key profession insights for Singapore:
-        1. Overall, Singapore's rule of law, digital friendly environment, high quality infrastructure, excellent digital connectivity, and efforts in adopting technologies efficiently continue to be key strengths of Singapore's competitive economy.
-        2. Singapore is located at the heart of Southeast Asia and provides excellent global connectivity to serve the fast-growing markets of the Asia-Pacific region and beyond.
-        3. Singapore offers a highly skilled labour force – ranking 2nd globally, and 1st in Asia-Pacific in INSEAD's Global Talent Competitiveness Index 2022. Singapore ranked 2nd globally for its ability to attract and grow talent.
-        4. Ranked 1st in EIU's Business Environment Rankings, Singapore has a conducive environment for business given its regulatory environment, stable and efficient infrastructure to support starting a business, access to financial intermediation and services, and enforcement of contracts.
-        5. Singapore's office space remains competitive and attractive relative to other international financial centres such as Hong Kong, London, and New York. Singapore ranked 11th in the Jones Lang Lasalle's Global Premium Office Rent Tracker (Q3 2022) and it continues to be cost competitive vis-à-vis other Asian cities.""".strip(),
-
+        1. The services sector employs the majority of Singapore's workforce. In 2023, the services sector had 2,024.8 thousand employed individuals, representing over 85 percent of the total employed residents.
+        2. Singapore's labor market is experiencing a structural transformation, with a marked shift towards services and a decline in traditional sectors like manufacturing and construction.
+        3. The wholesale and retail trade sector has seen fluctuations in employment, with a decrease from 351.8 thousand in 2022 to 335.8 thousand in 2023. This decline reflects broader shifts in retail practices, such as the rise of e-commerce and changing consumer habits, which may reduce demand for traditional retail jobs.
+        4. Employment in the manufacturing sector showed a slight decline, from 224.9 thousand in 2022 to 212 thousand in 2023. This reduction points towards ongoing shifts in the economy, where traditional manufacturing might be giving way to automation and productivity enhancements, or facing pressures from global economic challenges.
+        5. This trend has been consistent over recent years, with employment in services growing from 1,952.6 thousand in 2021 to 2,006 thousand in 2022. The steady increase reflects the importance of the services industry, which includes roles in finance, healthcare, education, and other professional services.
+        6. The construction sector also faced a gradual decline, with employment dropping from 98.4 thousand in 2021 to 94.3 thousand in 2023. This trend could be attributed to fewer new construction projects, reliance on technology, or workforce restructuring.
+        7. The minimum retirement age is 63 years. Employers who employs workers aged 55 and above will receive an offset of up to 7 percent of an employee’s monthly wages.
+        """.strip(),
     }
     return context_mapper[bias_type]

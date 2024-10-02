@@ -9,11 +9,22 @@ import sys
 
 import re
 
-# def set_cuda_visible_devices(gpus):
-#     os.environ["CUDA_VISIBLE_DEVICES"] = gpus
-#     print(f"CUDA_VISIBLE_DEVICES set to {gpus}")
-#     # Restart the script with the correct CUDA_VISIBLE_DEVICES setting
-#     # os.execv(sys.executable, ['python'] + sys.argv)
+import logging
+
+from bias_bench.adaptation import validation
+
+
+
+
+# Custom stream handler to redirect print() to logging
+class PrintLogger:
+    def write(self, message):
+        if message.strip():  # Avoid logging empty messages
+            logging.info(message.strip())  # Log print statements as INFO level
+
+    def flush(self):
+        pass  # Required method, but can be left empty for now
+
 
 
 thisdir = os.path.dirname(os.path.realpath(__file__))
@@ -93,11 +104,12 @@ def main():
 
     #safely import pytorch and transformerssss
 
-    from bias_bench.benchmark.stereoset import dataloader
-    from bias_bench.benchmark.stereoset import StereoSetRunner
+    # from bias_bench.benchmark.stereoset import dataloader
+    # from bias_bench.benchmark.stereoset import StereoSetRunner
+    import torch
     from bias_bench.model import models
     from bias_bench.adaptation import prompt_strings
-    import torch
+    from datetime import datetime
 
 
     model_short_name = args.model_name.split("/")[1].split("-")[0]
@@ -111,6 +123,29 @@ def main():
     print(f" - percentage: {args.percentage}")
     print(f" - bias type: {args.bias_type}")
 
+
+    # Configure the logging settings
+    # Get the current date and time
+    current_time = datetime.now()
+    # Format the current time as a string (optional)
+    formatted_time = current_time.strftime("%m_%d_%H_%M_%S")
+
+    log_directory = 'data/stereoset/adapted/log'  # Replace with your desired path
+    log_file = os.path.join(log_directory, f'log_{args.intra_inter}_{model_short_name}_{args.bias_type}_{formatted_time}.txt')   
+    os.makedirs(log_directory, exist_ok=True)  
+
+    # Set up basic configuration for logging
+    logging.basicConfig(
+        level=logging.DEBUG,  # Set the logging level
+        format='%(asctime)s - %(levelname)s - %(message)s',  # Log format
+        handlers=[
+            logging.FileHandler(log_file),  # Write logs to a file
+            logging.StreamHandler()  # Optionally log to console as well
+        ]
+    )
+
+    # Redirect stdout (print) to the logging system
+    sys.stdout = PrintLogger()
 
 
     stereoset_path = "data/stereoset/test.json"
@@ -141,18 +176,35 @@ def main():
     
     # prompt generate
     # add in if the prompt is not working
-    batch_prompts = prompt_strings.get_intra_stereo_prompt(stereoset_data)
+    if args.intra_inter == "intersentence":
+        batch_prompts = prompt_strings.get_inter_stereo_prompt(stereoset_data)
+    elif args.intra_inter == "intrasentence":
+        batch_prompts = prompt_strings.get_intra_stereo_prompt(stereoset_data)
 
     adapted = []
     comparison = []
 
     for i in tqdm(range(len(batch_prompts))):
-        try_time = 0
+        try_time = 5
         
         prompt = batch_prompts[i]
         original_set = stereoset_data[i]
         batch_response = generator.response_generator(prompt)
         key_result = prompt_strings.extract_sample_from_response("stereoset", batch_response[0])
+
+
+        # try:
+        #     assert validation.validate_response(original_sample, response, generator, results, try_time, generated_templates) is not None
+        # except:
+        #     key_result['target'] = ""
+        #     key_result['context'] = ""
+        #     key_result['sentence_1'] = ""
+        #     key_result['label_1'] = ''
+        #     key_result['sentence_2'] = ""
+        #     key_result['label_2'] = ''
+        #     key_result['sentence_3'] = ""
+        #     key_result['label_3'] = ''
+
 
         try:    
             assert key_result['context'] is not None
@@ -182,11 +234,12 @@ def main():
         try:
             assert key_result['bias_type'] == original_set['bias_type']
         except:
-            print("something wrong")
-            print(key_result['bias_type'], original_set['bias_type'])
-            print(key_result)
+            # print("something wrong")
+            # print(key_result['bias_type'], original_set['bias_type'])
+            # print(key_result)
+            logging.info(f"bias type has changed: , {key_result['bias_type']}, {original_set['bias_type']}")
         
-        comparison += [{'item_id': original_set['id'],
+        list_of_compare_contents = [{'item_id': original_set['id'],
                   'target_adapted': key_result['target'], 'target_orignal': original_set['target'],
                   'context_adapted': key_result['context'], 'context_orignal': original_set['context'],
                   'bias_adapted': key_result['bias_type'], 'bias_orignal': original_set['bias_type'],
@@ -202,7 +255,12 @@ def main():
                   'sentence_3_orignal': original_set['sentences'][2]['sentence'],
                   'sentence_2_label_adapted': key_result['label_2'],
                   'sentence_2_label_orignal': original_set['sentences'][1]['gold_label'],
+                  'reason': key_result['reason']
                   }]
+        
+        comparison += list_of_compare_contents
+
+        print(list_of_compare_contents)
 
 
     df = pd.DataFrame(comparison)
@@ -214,7 +272,7 @@ def main():
     if not os.path.exists(output_root):
         os.makedirs(output_root)
 
-    with open(f'{output_root}/test_adapted_sg_comparison_{args.intra_inter}_{args.bias_type}.csv', 'w', newline='', encoding='utf-8') as file:
+    with open(f'{output_root}/test_adapted_sg_comparison_{args.intra_inter}_{args.bias_type}_{model_short_name}.csv', 'w', newline='', encoding='utf-8') as file:
 
         df.to_csv(file, index=False)
 

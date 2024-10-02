@@ -16,7 +16,7 @@ python -m pip install -e .
 transformers==4.38.2 // 4.44.0
 pip install transformers accelerate
 export HF_HOME="/home/../LLM-bias/transformers_cache"
-
+pip install -U "huggingface_hub[cli]"
 
 conda create -n bias python "numpy>=1.22.3,<1.23.0" scipy
 python3.10
@@ -28,7 +28,7 @@ pip install sentencepiece
 pip install flash_attn (FLASH_ATTENTION_FORCE_BUILD=TRUE pip install flash-attn)
 
 # HF model
-export HF_HUB_ENABLE_HF_TRANSFER=1
+HF_HUB_ENABLE_HF_TRANSFER=0
 model_name="meta-llama/Meta-Llama-3-70B"
 huggingface-cli download $model_name --cache-dir /home/../LLM-bias/transformers_cache
 ```

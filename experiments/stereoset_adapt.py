@@ -193,19 +193,6 @@ def main():
         key_result = prompt_strings.extract_sample_from_response("stereoset", batch_response[0])
 
 
-        # try:
-        #     assert validation.validate_response(original_sample, response, generator, results, try_time, generated_templates) is not None
-        # except:
-        #     key_result['target'] = ""
-        #     key_result['context'] = ""
-        #     key_result['sentence_1'] = ""
-        #     key_result['label_1'] = ''
-        #     key_result['sentence_2'] = ""
-        #     key_result['label_2'] = ''
-        #     key_result['sentence_3'] = ""
-        #     key_result['label_3'] = ''
-
-
         try:    
             assert key_result['context'] is not None
             try_time = 1
@@ -234,9 +221,6 @@ def main():
         try:
             assert key_result['bias_type'] == original_set['bias_type']
         except:
-            # print("something wrong")
-            # print(key_result['bias_type'], original_set['bias_type'])
-            # print(key_result)
             logging.info(f"bias type has changed: , {key_result['bias_type']}, {original_set['bias_type']}")
         
         list_of_compare_contents = [{'item_id': original_set['id'],

@@ -97,36 +97,49 @@ def get_intra_stereo_prompt(instances) -> List[str]:
 
 
 def extract_sample_from_response(dataset, response) -> Dict:
-    if dataset.lower() == "stereoset":
-        patterns = {
-            'context': r'context:\s*(.+)',
-            'target': r'target:\s*(.+)',
-            'bias_type': r'bias_type:\s*(.+)',
-            'sentence_1': r'sentence_1:\s*(.+)',
-            'label_1': r'label_1:\s*(.+)',
-            'sentence_2': r'sentence_2:\s*(.+)',
-            'label_2': r'label_2:\s*(.+)',
-            'sentence_3': r'sentence_3:\s*(.+)',
-            'label_3': r'label_3:\s*(.+)',
-            'reason': r'Reason:\s*(.+)'
-            }
-        
-    results = {}
-    for key, pattern in patterns.items():
-        matches = re.findall(pattern, response)
-        if matches:
-            results[key] = re.sub(r'\<.*', '', matches[-1])   # Get the last occurrence and clear tag
-            try:
-                results[key] = re.split(r'\\n', results[key])[0] # clear \\n
-            except:
-                pass
-            try:
-                results[key] = re.sub(r'"', '', results[key]) # clear ""
-            except:
-                pass
 
-        else:
-            results[key] = None
+    result_json = re.sub(f'^.*?{re.escape("{")}', '{', response)
+
+    if dataset.lower() == "stereoset":
+        results = {
+            'context': '',
+            'target': '',
+            'bias_type': '',
+            'sentence_1': '',
+            'label_1': '',
+            'sentence_2': '',
+            'label_2': '',
+            'sentence_3': '',
+            'label_3': '',
+            'reason': '',
+            }
+    
+        
+    # results = {}
+    results['sentence_1'] = result_json['sentences'][0]['sentence']
+    results['sentence_2'] = result_json['sentences'][1]['sentence']
+    results['sentence_3'] = result_json['sentences'][2]['sentence']
+
+    results['label_1'] = result_json['sentences'][0]['label']
+    results['label_2'] = result_json['sentences'][1]['label']
+    results['label_3'] = result_json['sentences'][2]['label']
+
+    
+    # for key, pattern in patterns.items():
+    #     matches = re.findall(pattern, response)
+    #     if matches:
+    #         results[key] = re.sub(r'\<.*', '', matches[-1])   # Get the last occurrence and clear tag
+    #         try:
+    #             results[key] = re.split(r'\\n', results[key])[0] # clear \\n
+    #         except:
+    #             pass
+    #         try:
+    #             results[key] = re.sub(r'"', '', results[key]) # clear ""
+    #         except:
+    #             pass
+
+    #     else:
+    #         results[key] = None
 
     return results
 

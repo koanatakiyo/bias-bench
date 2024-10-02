@@ -100,7 +100,7 @@ class Private_Generator(Generator):
         # device = torch.device(f"cuda:{self._cuda}" if torch.cuda.is_available() else "cpu")
         prompt_input =  self.tokenizer(input, return_tensors="pt").to(self.device)
         token_count = len(prompt_input.encodings[0].words) # calculate the token between different inputs
-        print("the token count is:", token_count)
+        # print("the token count is:", token_count)
         outputs = self.model.generate(**prompt_input, pad_token_id=self.tokenizer.eos_token_id, max_new_tokens=max_new_tokens)
         # outputs = self.model.generate(**prompt_input, pad_token_id=self.tokenizer.eos_token_id)
 

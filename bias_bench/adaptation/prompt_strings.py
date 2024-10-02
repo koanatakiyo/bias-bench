@@ -1,6 +1,7 @@
 from typing import List, Dict 
 from bias_bench.adaptation.prompt_context import get_stereo_context
 import re
+import json 
 
 def get_inter_stereo_prompt(instances) -> List[str]:
     model_prompts = list()
@@ -58,9 +59,7 @@ def get_intra_stereo_prompt(instances) -> List[str]:
 
 
 
-def extract_sample_from_response(dataset, response) -> Dict:
-
-    result_json = re.sub(f'^.*?{re.escape("{")}', '{', response)
+def extract_sample_from_response(dataset, response, retry) -> Dict:
 
     if dataset.lower() == "stereoset":
         results = {
@@ -75,33 +74,29 @@ def extract_sample_from_response(dataset, response) -> Dict:
             'label_3': '',
             'reason': '',
             }
-    
-        
-    # results = {}
-    results['sentence_1'] = result_json['sentences'][0]['sentence']
-    results['sentence_2'] = result_json['sentences'][1]['sentence']
-    results['sentence_3'] = result_json['sentences'][2]['sentence']
 
-    results['label_1'] = result_json['sentences'][0]['label']
-    results['label_2'] = result_json['sentences'][1]['label']
-    results['label_3'] = result_json['sentences'][2]['label']
+    try:
+        result_json = re.sub(f'^.*?{re.escape("{")}', '{', response)
+        result_json = json.loads(result_json)
+            
+        # results = {}
+        results['context'] = result_json['context']
+        results['target'] = result_json['target']
+        results['bias_type'] = result_json['bias_type']
 
-    
-    # for key, pattern in patterns.items():
-    #     matches = re.findall(pattern, response)
-    #     if matches:
-    #         results[key] = re.sub(r'\<.*', '', matches[-1])   # Get the last occurrence and clear tag
-    #         try:
-    #             results[key] = re.split(r'\\n', results[key])[0] # clear \\n
-    #         except:
-    #             pass
-    #         try:
-    #             results[key] = re.sub(r'"', '', results[key]) # clear ""
-    #         except:
-    #             pass
+        results['sentence_1'] = result_json['sentences'][0]['sentence']
+        results['sentence_2'] = result_json['sentences'][1]['sentence']
+        results['sentence_3'] = result_json['sentences'][2]['sentence']
 
-    #     else:
-    #         results[key] = None
+        results['label_1'] = result_json['sentences'][0]['label']
+        results['label_2'] = result_json['sentences'][1]['label']
+        results['label_3'] = result_json['sentences'][2]['label']
+
+        results['reason'] = result_json['reason']
+
+    except:
+        print(f"retry: {retry}")
+        pass
 
     return results
 

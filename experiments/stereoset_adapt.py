@@ -92,6 +92,13 @@ def parse_args():
         help="choose cuda device",
     )
 
+    parser.add_argument(
+        "--data_percent",
+        type=str,
+        default="100",
+        help="dataset percentage",
+    )
+
     return parser.parse_args()
 
 
@@ -112,7 +119,7 @@ def main():
     from datetime import datetime
 
 
-    model_short_name = args.model_name.split("/")[1].split("-")[0]
+    model_short_name = re.sub("-", "_", args.model_name.split("/")[1])
 
     print("Running StereoSet:")
     print(f" - persistent_dir: {args.persistent_dir}")
@@ -122,6 +129,7 @@ def main():
     print(f" - parallel cudas: {args.cuda}")
     print(f" - percentage: {args.percentage}")
     print(f" - bias type: {args.bias_type}")
+    print(f" - data percentage: {args.data_percent}")
 
 
     # Configure the logging settings
@@ -131,7 +139,7 @@ def main():
     formatted_time = current_time.strftime("%m_%d_%H_%M_%S")
 
     log_directory = 'data/stereoset/adapted/log'  # Replace with your desired path
-    log_file = os.path.join(log_directory, f'log_{args.intra_inter}_{model_short_name}_{args.bias_type}_{formatted_time}.txt')   
+    log_file = os.path.join(log_directory, f'log_{args.intra_inter}_{args.bias_type}_{formatted_time}_{model_short_name}.txt')   
     os.makedirs(log_directory, exist_ok=True)  
 
     # Set up basic configuration for logging
@@ -146,7 +154,6 @@ def main():
 
     # Redirect stdout (print) to the logging system
     sys.stdout = PrintLogger()
-
 
     stereoset_path = "data/stereoset/test.json"
 
@@ -163,10 +170,13 @@ def main():
 
     stereoset_data = stereoset_data['data'][args.intra_inter]
 
-
     if args.percentage != 100:
         sample_size = int(len(stereoset_data) * (float(args.percentage) / 100))
         stereoset_data = random.sample(stereoset_data, sample_size)
+    
+    # if args.data_percent != 100:
+    #     sample_size = int(len(stereoset_data) * (float(args.percentage) / 100))
+    #     stereoset_data = 
 
     if args.bias_type is not None:
         stereoset_data = [item for item in stereoset_data if item["bias_type"] == args.bias_type]
@@ -185,22 +195,21 @@ def main():
     comparison = []
 
     for i in tqdm(range(len(batch_prompts))):
-        try_time = 5
+        try_time = 0
         
         prompt = batch_prompts[i]
         original_set = stereoset_data[i]
         batch_response = generator.response_generator(prompt)
-        key_result = prompt_strings.extract_sample_from_response("stereoset", batch_response[0])
+        key_result = prompt_strings.extract_sample_from_response("stereoset", batch_response[0], try_time)
 
 
         try:    
-            assert key_result['context'] is not None
-            try_time = 1
+            assert key_result['context'] != ''
         except:
-            while key_result['context'] is None:
+            while key_result['context'] == '':
                 try_time += 1
                 batch_response = generator.response_generator(prompt)
-                key_result = prompt_strings.extract_sample_from_response("stereoset", batch_response[0])
+                key_result = prompt_strings.extract_sample_from_response("stereoset", batch_response[0], try_time)
                 # print("what is in here?")
                 # print(key_result)
                 if try_time > 5:

@@ -28,6 +28,7 @@ pip install sentencepiece
 pip install flash_attn (FLASH_ATTENTION_FORCE_BUILD=TRUE pip install flash-attn)
 
 # HF model
+HF_HUB_ENABLE_HF_TRANSFER=1
 HF_HUB_ENABLE_HF_TRANSFER=0
 model_name="meta-llama/Meta-Llama-3-70B"
 huggingface-cli download $model_name --cache-dir /home/../LLM-bias/transformers_cache

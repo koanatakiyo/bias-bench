@@ -1,0 +1,2 @@
+2024-09-27 15:01:27,019 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Meta-Llama-3-70B/resolve/main/config.json HTTP/11" 200 0
+2024-09-27 15:01:27,185 - DEBUG - Loading bitsandbytes native library from: /home/yandan/miniconda3/envs/myenv/lib/python3.10/site-packages/bitsandbytes/libbitsandbytes_cuda118.so

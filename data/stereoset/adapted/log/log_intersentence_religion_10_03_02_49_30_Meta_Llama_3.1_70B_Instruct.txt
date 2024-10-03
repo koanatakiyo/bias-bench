@@ -1,0 +1,9 @@
+2024-10-03 02:49:31,368 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Meta-Llama-3.1-70B-Instruct/resolve/main/config.json HTTP/11" 307 0
+2024-10-03 02:49:31,610 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Llama-3.1-70B-Instruct/resolve/main/config.json HTTP/11" 200 0
+2024-10-03 02:49:31,680 - DEBUG - Loading bitsandbytes native library from: /home/yandan/miniconda3/envs/myenv/lib/python3.10/site-packages/bitsandbytes/libbitsandbytes_cuda118.so
+2024-10-03 02:52:04,483 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Meta-Llama-3.1-70B-Instruct/resolve/main/generation_config.json HTTP/11" 307 0
+2024-10-03 02:52:04,722 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Llama-3.1-70B-Instruct/resolve/main/generation_config.json HTTP/11" 200 0
+2024-10-03 02:52:05,439 - WARNING - Some parameters are on the meta device because they were offloaded to the cpu.
+2024-10-03 02:52:05,538 - INFO - Model is loaded on cuda:0
+2024-10-03 02:52:05,773 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Meta-Llama-3.1-70B-Instruct/resolve/main/tokenizer_config.json HTTP/11" 307 0
+2024-10-03 02:52:06,020 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Llama-3.1-70B-Instruct/resolve/main/tokenizer_config.json HTTP/11" 200 0

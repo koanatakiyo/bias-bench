@@ -19,8 +19,8 @@
                 // "--output_file", "../results/stereoset_processed/try.json", 
                 // "--batch_size", "1",
                 "--seed", "42", "--intra_inter", "intersentence",
-                "--cuda", "6,7", "--model_name", "meta-llama/Meta-Llama-3-70B",
-                "--percentage", "0.1", 
+                "--cuda", "0, 1, 6, 7", "--model_name", "meta-llama/Llama-3.1-70B-Instruct",
+                "--percentage", "0.1", "--part", "1",
             ]
         }
     ]

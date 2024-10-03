@@ -13,7 +13,7 @@ import logging
 
 from bias_bench.adaptation import validation
 
-
+import csv
 
 
 # Custom stream handler to redirect print() to logging
@@ -99,6 +99,15 @@ def parse_args():
         help="dataset percentage",
     )
 
+    parser.add_argument(
+        "--part",
+        type=int,
+        default=None,
+        choices=[1,2,3,4,5],
+        help="dataset_part",
+
+    )
+
     return parser.parse_args()
 
 
@@ -130,6 +139,7 @@ def main():
     print(f" - percentage: {args.percentage}")
     print(f" - bias type: {args.bias_type}")
     print(f" - data percentage: {args.data_percent}")
+    print(f" - part: {args.part}")
 
 
     # Configure the logging settings
@@ -139,7 +149,7 @@ def main():
     formatted_time = current_time.strftime("%m_%d_%H_%M_%S")
 
     log_directory = 'data/stereoset/adapted/log'  # Replace with your desired path
-    log_file = os.path.join(log_directory, f'log_{args.intra_inter}_{args.bias_type}_{formatted_time}_{model_short_name}.txt')   
+    log_file = os.path.join(log_directory, f'log_{args.intra_inter}_{formatted_time}_{model_short_name}_{args.part}_{args.bias_type}.txt')   
     os.makedirs(log_directory, exist_ok=True)  
 
     # Set up basic configuration for logging
@@ -155,10 +165,26 @@ def main():
     # Redirect stdout (print) to the logging system
     sys.stdout = PrintLogger()
 
-    stereoset_path = "data/stereoset/test.json"
+    #write csv
+    output_root = "data/stereoset/adapted"
+
+    if not os.path.exists(output_root):
+        os.makedirs(output_root)
+
+    # with open(f'{output_root}/test_adapted_sg_comparison_{args.intra_inter}_{model_short_name}_part_{args.part}_{args.bias_type}.csv', 'w', newline='', encoding='utf-8') as csvfile:
+    #     writer = csv.DictWriter(csvfile, fieldnames=data.keys())
+    #     writer.writeheader()
+
+    if args.part is None:
+        stereoset_path = "data/stereoset/test.json"
+        
+    else:
+        stereoset_path = f"data/stereoset/adapt_part/test_part_{args.part}.json"
+
 
     visible_cuda_num = torch.cuda.device_count() # the to device cuda
     devices = []
+
     for i in range(visible_cuda_num):
         devices += [torch.device(f"cuda:{i}")]
 
@@ -168,15 +194,15 @@ def main():
     except:
         print(os.getcwd())
 
-    stereoset_data = stereoset_data['data'][args.intra_inter]
+    
+    if args.part is None:
+        stereoset_data = stereoset_data['data'][args.intra_inter]
+    
 
     if args.percentage != 100:
         sample_size = int(len(stereoset_data) * (float(args.percentage) / 100))
         stereoset_data = random.sample(stereoset_data, sample_size)
     
-    # if args.data_percent != 100:
-    #     sample_size = int(len(stereoset_data) * (float(args.percentage) / 100))
-    #     stereoset_data = 
 
     if args.bias_type is not None:
         stereoset_data = [item for item in stereoset_data if item["bias_type"] == args.bias_type]
@@ -250,36 +276,22 @@ def main():
                   'sentence_2_label_orignal': original_set['sentences'][1]['gold_label'],
                   'reason': key_result['reason']
                   }]
+
+        with open(f'{output_root}/test_adapted_sg_comparison_{args.intra_inter}_{model_short_name}_part_{args.part}_{args.bias_type}.csv', 'w', newline='', encoding='utf-8') as csvfile:
+
+            writer = csv.DictWriter(csvfile, fieldnames=list_of_compare_contents[0].keys())
+            if i == 0:
+                writer.writeheader() #write header
+            writer.writerow(list_of_compare_contents[0])
         
         comparison += list_of_compare_contents
 
         print(list_of_compare_contents)
 
 
-    df = pd.DataFrame(comparison)
-
-    print(df)
-
-    output_root = "data/stereoset/adapted"
-
-    if not os.path.exists(output_root):
-        os.makedirs(output_root)
-
-    with open(f'{output_root}/test_adapted_sg_comparison_{args.intra_inter}_{args.bias_type}_{model_short_name}.csv', 'w', newline='', encoding='utf-8') as file:
-
-        df.to_csv(file, index=False)
-
 
 
 if __name__ == "__main__":
     main()
-
-  
-
-# key_result = prompt_strings.extract_sample_from_response("stereoset", batch_response[0])
-    
-
-# Context simulates documents in Context aware query re-writing
-
 
 

@@ -273,7 +273,9 @@ def main():
                   'sentence_3_adapted':key_result['sentence_3'],
                   'sentence_3_orignal': original_set['sentences'][2]['sentence'],
                   'sentence_2_label_adapted': key_result['label_2'],
-                  'sentence_2_label_orignal': original_set['sentences'][1]['gold_label'],
+                  'sentence_2_label_orignal': original_set['sentences'][2]['gold_label'],
+                  'sentence_3_label_adapted': key_result['label_3'],
+                  'sentence_3_label_orignal': original_set['sentences'][2]['gold_label'],
                   'reason': key_result['reason']
                   }]
 

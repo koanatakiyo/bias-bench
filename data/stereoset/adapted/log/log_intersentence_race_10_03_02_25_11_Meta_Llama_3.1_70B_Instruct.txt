@@ -1,8 +1,0 @@
-2024-10-03 02:25:12,367 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Meta-Llama-3.1-70B-Instruct/resolve/main/config.json HTTP/11" 307 0
-2024-10-03 02:25:12,617 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Llama-3.1-70B-Instruct/resolve/main/config.json HTTP/11" 200 0
-2024-10-03 02:25:12,736 - DEBUG - Loading bitsandbytes native library from: /home/yandan/miniconda3/envs/myenv/lib/python3.10/site-packages/bitsandbytes/libbitsandbytes_cuda118.so
-2024-10-03 02:27:57,022 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Meta-Llama-3.1-70B-Instruct/resolve/main/generation_config.json HTTP/11" 307 0
-2024-10-03 02:27:57,257 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Llama-3.1-70B-Instruct/resolve/main/generation_config.json HTTP/11" 200 0
-2024-10-03 02:27:58,095 - INFO - Model is loaded on cuda:0
-2024-10-03 02:27:58,338 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Meta-Llama-3.1-70B-Instruct/resolve/main/tokenizer_config.json HTTP/11" 307 0
-2024-10-03 02:27:58,577 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Llama-3.1-70B-Instruct/resolve/main/tokenizer_config.json HTTP/11" 200 0

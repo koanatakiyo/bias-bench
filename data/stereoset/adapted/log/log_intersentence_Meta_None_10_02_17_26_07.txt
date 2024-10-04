@@ -1,4 +1,0 @@
-2024-10-02 17:26:08,672 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Meta-Llama-3-8B/resolve/main/config.json HTTP/11" 200 0
-2024-10-02 17:26:08,842 - DEBUG - Loading bitsandbytes native library from: /home/yandan/miniconda3/envs/myenv/lib/python3.10/site-packages/bitsandbytes/libbitsandbytes_cuda118.so
-2024-10-02 17:26:35,842 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Meta-Llama-3-8B/resolve/main/generation_config.json HTTP/11" 200 0
-2024-10-02 17:26:36,432 - DEBUG - https://huggingface.co:443 "HEAD /meta-llama/Meta-Llama-3-8B/resolve/main/tokenizer_config.json HTTP/11" 200 0

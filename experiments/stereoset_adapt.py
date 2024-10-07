@@ -272,14 +272,12 @@ def main():
                   'sentence_2_label_orignal': original_set['sentences'][1]['gold_label'],
                   'sentence_3_adapted':key_result['sentence_3'],
                   'sentence_3_orignal': original_set['sentences'][2]['sentence'],
-                  'sentence_2_label_adapted': key_result['label_2'],
-                  'sentence_2_label_orignal': original_set['sentences'][2]['gold_label'],
                   'sentence_3_label_adapted': key_result['label_3'],
                   'sentence_3_label_orignal': original_set['sentences'][2]['gold_label'],
                   'reason': key_result['reason']
                   }]
 
-        with open(f'{output_root}/test_adapted_sg_comparison_{args.intra_inter}_{model_short_name}_part_{args.part}_{args.bias_type}.csv', 'w', newline='', encoding='utf-8') as csvfile:
+        with open(f'{output_root}/test_adapted_sg_comparison_{args.intra_inter}_{model_short_name}_part_{args.part}_{args.bias_type}.csv', 'a', newline='', encoding='utf-8') as csvfile:
 
             writer = csv.DictWriter(csvfile, fieldnames=list_of_compare_contents[0].keys())
             if i == 0:

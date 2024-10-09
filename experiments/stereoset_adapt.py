@@ -179,7 +179,7 @@ def main():
         stereoset_path = "data/stereoset/test.json"
         
     else:
-        stereoset_path = f"data/stereoset/adapt_part/test_part_{args.part}.json"
+        stereoset_path = f"data/stereoset/adapt_part/not_in_test_part_{args.part}.json"
 
 
     visible_cuda_num = torch.cuda.device_count() # the to device cuda
@@ -277,7 +277,7 @@ def main():
                   'reason': key_result['reason']
                   }]
 
-        with open(f'{output_root}/test_adapted_sg_comparison_{args.intra_inter}_{model_short_name}_part_{args.part}_{args.bias_type}.csv', 'a', newline='', encoding='utf-8') as csvfile:
+        with open(f'{output_root}/test_adapted_sg_comparison_{args.intra_inter}_{model_short_name}_part_{args.part}_{args.bias_type}.csv', 'w', newline='', encoding='utf-8') as csvfile:
 
             writer = csv.DictWriter(csvfile, fieldnames=list_of_compare_contents[0].keys())
             if i == 0:

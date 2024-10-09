@@ -26,6 +26,7 @@ pip install hf_transfer
 pip install accelerate
 pip install sentencepiece
 pip install flash_attn (FLASH_ATTENTION_FORCE_BUILD=TRUE pip install flash-attn)
+pip install protobuf
 
 # HF model
 HF_HUB_ENABLE_HF_TRANSFER=1

@@ -37,11 +37,19 @@ class AutoModelForCausalLM:
     """"To load huggingface models"""
     def __new__(self, model_name_or_path):
         # try:
-        return transformers.AutoModelForCausalLM.from_pretrained(model_name_or_path, return_dict=True,
-                                                                 token=HF_TOKEN,
-                                                                 cache_dir='/data/yandan/transformers_cache',
-                                                                # trust_remote_code=True,
-                                                                 output_hidden_states=True).bfloat16()
+        self._model_name_or_path = model_name_or_path
+        quant_config = transformers.BitsAndBytesConfig( # NF4 quantization
+            load_in_8bit=True,
+        )
+
+        return transformers.AutoModelForCausalLM.from_pretrained(
+                                                    self._model_name_or_path, 
+                                                    cache_dir='/data/yandan/transformers_cache', 
+                                                    trust_remote_code=True,
+                                                    output_hidden_states=True,
+                                                    device_map="auto",
+                                                    quantization_config = quant_config
+                                                    )
 
 
 class Generator(ABC):
@@ -59,9 +67,6 @@ class Private_Generator(Generator):
             
             quant_config = transformers.BitsAndBytesConfig( # NF4 quantization
                 load_in_8bit=True,
-                # bnb_4bit_quant_type="nf4",
-                # bnb_4bit_use_double_quant=True,
-                # bnb_4bit_compute_dtype=torch.bfloat16,
             )
 
             self.model = transformers.AutoModelForCausalLM.from_pretrained(
@@ -70,10 +75,8 @@ class Private_Generator(Generator):
                                                         trust_remote_code=True,
                                                         output_hidden_states=True,
                                                         device_map="auto",
-                                                        # load_in_8bit=True,
                                                         quantization_config = quant_config
                                                         )
-                                                        # ).bfloat16()
             
         else: 
             quant_config = transformers.BitsAndBytesConfig( # NF4 quantization

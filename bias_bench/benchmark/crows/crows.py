@@ -227,10 +227,10 @@ class CrowSPairsRunner:
         df_data = self._read_data(self._input_file, self._percentage)
 
         # Use GPU, if available.
-        if self._is_self_debias:
-            self._model._model.to(device)
-        else:
-            self._model.to(device)
+        # if self._is_self_debias:
+        #     self._model._model.to(device)
+        # else:
+        #     self._model.to(device)
 
         # Score each sentence.
         # Each row in the dataframe has the sentid and score for pro and anti-stereo.

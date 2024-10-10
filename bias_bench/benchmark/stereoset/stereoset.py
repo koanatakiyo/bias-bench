@@ -204,22 +204,26 @@ class StereoSetRunner:
         """Score intrasentence examples using likelihood scoring as proposed by Nadeem et al. for
         generative models (e.g., GPT-2).
         """
-        # Use GPU, if available.
-        if self._is_self_debias:
-            self._intrasentence_model._model.to(device)
-        else:
-            model = self._intrasentence_model.to(device)
+        # # Use GPU, if available.
+        # if self._is_self_debias:
+        #     self._intrasentence_model._model.to(device)
+        # else:
+        #     model = self._intrasentence_model.to(device)
+
+        # for 4//8 bits use the model itself
+        model = self._intrasentence_model
 
         # Load the dataset.
         stereoset = dataloader.StereoSet(self._input_file, self._percentage)
 
         # Assume we are using GPT-2.
         unconditional_start_token = self._tokenizer.bos_token
-        start_token = (
-            torch.tensor(self._tokenizer.encode(unconditional_start_token))
-            .to(device)
-            .unsqueeze(0)
-        )
+        # start_token = (
+        #     torch.tensor(self._tokenizer.encode(unconditional_start_token))
+        #     .to(device)
+        #     .unsqueeze(0)
+        # )
+        start_token = self._tokenizer.encode(unconditional_start_token)
 
         # Get the unconditional initial token prompts if not using self-debiasing.
         if not self._is_self_debias:

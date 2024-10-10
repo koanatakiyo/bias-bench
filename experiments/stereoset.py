@@ -65,6 +65,14 @@ parser.add_argument(
     help="choose train percentage",
 )
 
+parser.add_argument(
+    "--task",
+    type=str,
+    default="intrasentence",
+    choices=["intrasentence", "intersentence"],
+    help="choose train percentage",
+)
+
 
 if __name__ == "__main__":
 
@@ -88,6 +96,7 @@ if __name__ == "__main__":
     print(f" - seed: {args.seed}")
     print(f" - cuda: {args.cuda}")
     print(f" - percentage: {args.percentage}")
+    print(f" - task: {args.task}")
     
     # try_model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path).bfloat16()
 
@@ -107,6 +116,7 @@ if __name__ == "__main__":
         is_generative=_is_generative(args.model_name_or_path),
         cuda=args.cuda,
         percentage=args.percentage,
+        task = args.task
     )
     results = runner()
 

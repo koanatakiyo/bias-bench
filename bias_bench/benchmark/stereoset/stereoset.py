@@ -48,6 +48,7 @@ class StereoSetRunner:
         # model_start_token=None,
         cuda=None,
         percentage=100,
+        task=None
     ):
         """Initializes StereoSet runner.
 
@@ -84,8 +85,7 @@ class StereoSetRunner:
         # self._model_start_token=model_start_token
         self._cuda = cuda
         self._percentage = percentage
-
-        
+        self._task = task
 
 
     def __call__(self):
@@ -214,16 +214,15 @@ class StereoSetRunner:
         model = self._intrasentence_model
 
         # Load the dataset.
-        stereoset = dataloader.StereoSet(self._input_file, self._percentage)
+        stereoset = dataloader.StereoSet(self._input_file, self._percentage, self._task)
 
         # Assume we are using GPT-2.
         unconditional_start_token = self._tokenizer.bos_token
-        # start_token = (
-        #     torch.tensor(self._tokenizer.encode(unconditional_start_token))
-        #     .to(device)
-        #     .unsqueeze(0)
-        # )
-        start_token = self._tokenizer.encode(unconditional_start_token)
+        start_token = (
+            torch.tensor(self._tokenizer.encode(unconditional_start_token))
+            .to(device)
+            .unsqueeze(0)
+        )
 
         # Get the unconditional initial token prompts if not using self-debiasing.
         if not self._is_self_debias:

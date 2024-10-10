@@ -91,7 +91,7 @@ class IntrasentenceLoader(object):
 
 
 class StereoSet(object):
-    def __init__(self, location, percentage, json_obj=None):
+    def __init__(self, location, percentage, task, json_obj=None):
         """Instantiates the StereoSet object.
 
         Args:
@@ -103,10 +103,10 @@ class StereoSet(object):
                 self.json = json.load(f)
         else:
             self.json = json_obj
+
         self.percentage = percentage
-        self.version = self.json["version"]
-        
-        create_json = self.json["data"]["intrasentence"]
+        # self.version = self.json["version"]
+        create_json = self.json["data"][task]
 
         # certain percentage of data
         if self.percentage != 100:
@@ -116,6 +116,19 @@ class StereoSet(object):
         self.intrasentence_examples = self.__create_intrasentence_examples__(
             create_json
         )
+
+    def __create_intersentence_examples__(self, examples):
+        created_examples = []
+        for example in examples:
+            sentences = []
+            for sentence in example["sentences"]:
+                labels = []
+                for label in sentence["labels"]:
+                    labels.append(Label(**label))
+                sentence_obj = Sentence(
+                    sentence["id"], sentence["sentence"], labels, sentence["gold_label"]
+                )
+                word_idx = None
 
     def __create_intrasentence_examples__(self, examples):
         created_examples = []
@@ -228,5 +241,15 @@ class IntrasentenceExample(Example):
         See Example's docstring for more information.
         """
         super(IntrasentenceExample, self).__init__(
+            ID, bias_type, target, context, sentences
+        )
+
+class IntersentenceExample(Example):
+    def __init__(self, ID, bias_type, target, context, sentences):
+        """Implements the Example class for an intrasentence example.
+
+        See Example's docstring for more information.
+        """
+        super(IntersentenceExample, self).__init__(
             ID, bias_type, target, context, sentences
         )

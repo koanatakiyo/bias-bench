@@ -269,19 +269,3 @@ if __name__ == "__main__":
     parse_file(
                 stereoset, results, args.percentage
             )
-
-
-    # if args.predictions_dir is not None:
-    #     predictions_dir = args.predictions_dir
-    #     if args.predictions_dir[-1] != "/":
-    #         predictions_dir = args.predictions_dir + "/"
-    #     for prediction_file in glob.glob(predictions_dir + "*.json"):
-    #         print()
-    #         print(f"Evaluating {prediction_file}...")
-    #         parse_file(
-    #             f"{args.persistent_dir}/data/stereoset/test.json", prediction_file, args.percentage
-    #         )
-    # else:
-    #     parse_file(
-    #         f"{args.persistent_dir}/data/stereoset/test.json", args.predictions_file, args.percentage
-    #     )

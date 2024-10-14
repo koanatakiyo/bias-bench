@@ -4,7 +4,7 @@ import glob
 import json
 import os
 import re
-import wandb
+# import wandb
 
 import transformers
 
@@ -72,8 +72,25 @@ parser.add_argument(
     help="The batch size to use during StereoSet intrasentence evaluation.",
 )
 
+parser.add_argument(
+    "--task",
+    type=str,
+    default="intrasentence",
+    choices=["intrasentence", "intersentence"],
+    help="choose train percentage",
+)
+
+parser.add_argument(
+    "--is_sg",
+    type=str,
+    choices=["True", "False"],
+    help="Is sg adapted",
+)
+
+
+
 class ScoreEvaluator:
-    def __init__(self, dataset, model_result, percentage=None):
+    def __init__(self, dataset, model_result, task, percentage=None):
         """Evaluates the results of a StereoSet predictions file with respect to the gold label file.
 
         Args:
@@ -83,43 +100,47 @@ class ScoreEvaluator:
         Returns:
             Overall, a dictionary of composite scores for the intrasentence task.
         """
-        # Cluster ID, gold_label to sentence ID.
+       
         self.percentage = percentage
         # stereoset = dataloader.StereoSet(gold_file_path, self.percentage)
         stereoset = dataset
-        self.intrasentence_examples = stereoset.get_intrasentence_examples()
         self.id2term = {}
         self.id2gold = {}
         self.id2score = {}
         self.example2sent = {}
         self.domain2example = {
             "intrasentence": defaultdict(lambda: []),
+            "intersentence": defaultdict(lambda: []),
         }
         
         self.predictions = model_result
-        # with open(predictions_file_path) as f:
-        #     self.predictions = json.load(f)
+        self.task = task
 
+        if self.task == "intrasentence":
+             # Cluster ID, gold_label to sentence ID.
+            self.sentence_examples = stereoset.get_intrasentence_examples()
+        elif self.task == "intersentence":
+            self.sentence_examples = stereoset.get_intersentence_examples()
 
-        for example in self.intrasentence_examples:
+        for example in self.sentence_examples:
             for sentence in example.sentences:
                 self.id2term[sentence.ID] = example.target
                 self.id2gold[sentence.ID] = sentence.gold_label
                 self.example2sent[(example.ID, sentence.gold_label)] = sentence.ID
-                self.domain2example["intrasentence"][example.bias_type].append(example)
+                self.domain2example[self.task][example.bias_type].append(example)
 
-        for sent in self.predictions.get("intrasentence", []):
+        for sent in self.predictions.get(self.task, []):
             self.id2score[sent["id"]] = sent["score"]
 
         results = defaultdict(lambda: {})
 
         for domain in ["gender", "profession", "race", "religion"]:
-            results["intrasentence"][domain] = self.evaluate(
-                self.domain2example["intrasentence"][domain]
+            results[self.task][domain] = self.evaluate(
+                self.domain2example[self.task][domain]
             )
 
-        results["intrasentence"]["overall"] = self.evaluate(self.intrasentence_examples)
-        results["overall"] = self.evaluate(self.intrasentence_examples)
+        results[self.task]["overall"] = self.evaluate(self.sentence_examples)
+        results["overall"] = self.evaluate(self.sentence_examples)
         self.results = results
 
     def get_overall_results(self):
@@ -135,7 +156,10 @@ class ScoreEvaluator:
         for example in examples:
             pro_id = self.example2sent[(example.ID, "stereotype")]
             anti_id = self.example2sent[(example.ID, "anti-stereotype")]
-            unrelated_id = self.example2sent[(example.ID, "unrelated")]
+            try:
+                unrelated_id = self.example2sent[(example.ID, "unrelated")]
+            except:
+                print("what?")
             # assert self.id2score[pro_id] != self.id2score[anti_id]
             # assert self.id2score[unrelated_id] != self.id2score[anti_id]
 
@@ -212,9 +236,9 @@ class ScoreEvaluator:
         return results
 
 
-def parse_file(stereoset, model_result, percentage_num):
+def parse_file(stereoset, model_result, percentage_num, task):
     score_evaluator = ScoreEvaluator(
-        dataset=stereoset, model_result=model_result, percentage=percentage_num
+        dataset=stereoset, model_result=model_result, percentage=percentage_num, task=task
     )
     overall = score_evaluator.get_overall_results()
     score_evaluator.pretty_print(overall)
@@ -234,6 +258,8 @@ if __name__ == "__main__":
     print(f" - cuda: {args.cuda}")
     print(f" - percentage: {args.percentage}")
     print(f" - seed: {args.seed}")
+    print(f" - is_sg: {args.is_sg}")
+    print(f" - task: {args.task}")
 
 
     model_short_name = args.model_name_or_path.split("/")[1].split("-")[0]
@@ -244,28 +270,31 @@ if __name__ == "__main__":
         seed=args.seed,
     )
 
-    # wandb.init(project="bias_bench", name=experiment_id, reinit=True)
-    # wandb.config.update(args)
 
     model = getattr(models, "AutoModelForCausalLM")(args.model_name_or_path)
     model.eval()
     tokenizer = transformers.AutoTokenizer.from_pretrained(args.model_name_or_path)
 
+    if args.is_sg == "True":
+        input_file_path=f"{args.persistent_dir}/data/stereoset/adapted/test_intersentence_sg.json"
+    elif args.is_sg == "False":
+        input_file_path=f"{args.persistent_dir}/data/stereoset/test.json"
 
     runner = StereoSetRunner(
         intrasentence_model=model,
         tokenizer=tokenizer,
-        input_file=f"{args.persistent_dir}/data/stereoset/test.json",
+        input_file=input_file_path,
         model_name_or_path=args.model_name_or_path,
         batch_size=args.batch_size,
         is_generative=_is_generative(args.model_name_or_path),
         cuda=args.cuda,
         percentage=args.percentage,
-
+        task=args.task,
+        is_sg=args.is_sg
     )
 
     results, stereoset = runner()
 
     parse_file(
-                stereoset, results, args.percentage
+                stereoset, results, args.percentage, args.task
             )

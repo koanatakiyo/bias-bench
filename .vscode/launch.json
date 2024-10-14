@@ -18,9 +18,9 @@
                 // "--predictions_file", "../results/stereoset/stereoset_c-microsoft_s-42.json", 
                 // "--output_file", "../results/stereoset_processed/try.json", 
                 // "--batch_size", "1",
-                "--seed", "42", "--intra_inter", "intersentence",
-                "--cuda", "0, 1, 6, 7", "--model_name", "meta-llama/Llama-3.1-70B-Instruct",
-                "--percentage", "0.1", "--part", "1",
+                "--seed", "42", 
+                "--cuda", "2", "--model_name_or_path", "microsoft/Phi-3-mini-4k-instruct",
+                "--percentage", "5", "--is_sg", "False", "--task", "intersentence",
             ]
         }
     ]

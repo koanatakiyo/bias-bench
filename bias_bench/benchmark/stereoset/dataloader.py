@@ -91,7 +91,7 @@ class IntrasentenceLoader(object):
 
 
 class StereoSet(object):
-    def __init__(self, location, percentage, task, json_obj=None):
+    def __init__(self, location, percentage, task, is_sg, json_obj=None):
         """Instantiates the StereoSet object.
 
         Args:
@@ -105,41 +105,63 @@ class StereoSet(object):
             self.json = json_obj
 
         self.percentage = percentage
-        # self.version = self.json["version"]
         create_json = self.json["data"][task]
+
+        self._task = task
+        self._is_sg = is_sg
 
         # certain percentage of data
         if self.percentage != 100:
             sample_size = int(len(create_json) * (self.percentage / 100))
             create_json = random.sample(create_json, sample_size)
 
-        self.intrasentence_examples = self.__create_intrasentence_examples__(
-            create_json
+        if task == "intrasentence":
+            self.intrasentence_examples = self.__create_intrasentence_examples__(
+                create_json, self._is_sg
+        )
+        elif task == "intersentence":
+            self.intersentence_examples = self.__create_intersentence_examples__(
+                create_json, self._is_sg
         )
 
-    def __create_intersentence_examples__(self, examples):
+    def __create_intersentence_examples__(self, examples, is_sg):
         created_examples = []
         for example in examples:
             sentences = []
             for sentence in example["sentences"]:
                 labels = []
-                for label in sentence["labels"]:
-                    labels.append(Label(**label))
+                if is_sg == "False":
+                    for label in sentence["labels"]:
+                        labels.append(Label(**label))
                 sentence_obj = Sentence(
-                    sentence["id"], sentence["sentence"], labels, sentence["gold_label"]
+                    sentence["id"], sentence["sentence"], labels, sentence["gold_label"], is_sg
                 )
-                word_idx = None
+                sentences.append(sentence_obj)
 
-    def __create_intrasentence_examples__(self, examples):
+            created_example = IntersentenceExample(
+                example["id"],
+                example["bias_type"],
+                example["target"],
+                example["context"],
+                sentences,
+            )
+            created_examples.append(created_example)
+        return created_examples
+
+    def get_intersentence_examples(self):
+        return self.intersentence_examples
+    
+    def __create_intrasentence_examples__(self, examples, is_sg):
         created_examples = []
         for example in examples:
             sentences = []
             for sentence in example["sentences"]:
                 labels = []
-                for label in sentence["labels"]:
-                    labels.append(Label(**label))
+                if is_sg == "False":
+                    for label in sentence["labels"]:
+                        labels.append(Label(**label))
                 sentence_obj = Sentence(
-                    sentence["id"], sentence["sentence"], labels, sentence["gold_label"]
+                    sentence["id"], sentence["sentence"], labels, sentence["gold_label"], is_sg
                 )
                 word_idx = None
                 for idx, word in enumerate(example["context"].split(" ")):
@@ -152,6 +174,7 @@ class StereoSet(object):
                     str.maketrans("", "", string.punctuation)
                 )
                 sentences.append(sentence_obj)
+
             created_example = IntrasentenceExample(
                 example["id"],
                 example["bias_type"],
@@ -194,7 +217,7 @@ class Example(object):
 
 
 class Sentence(object):
-    def __init__(self, ID, sentence, labels, gold_label):
+    def __init__(self, ID, sentence, labels, gold_label, is_sg):
         """A generic sentence type that represents a sentence.
 
         Args:
@@ -207,13 +230,14 @@ class Sentence(object):
         """
         assert type(ID) == str
         assert gold_label in ["stereotype", "anti-stereotype", "unrelated"]
-        assert isinstance(labels, list)
-        assert isinstance(labels[0], Label)
+        if  is_sg != "True":
+            assert isinstance(labels, list)
+            assert isinstance(labels[0], Label)
+            self.labels = labels
 
         self.ID = ID
         self.sentence = sentence
         self.gold_label = gold_label
-        self.labels = labels
         self.template_word = None
 
     def __str__(self):
@@ -236,7 +260,7 @@ class Label(object):
 
 class IntrasentenceExample(Example):
     def __init__(self, ID, bias_type, target, context, sentences):
-        """Implements the Example class for an intrasentence example.
+        """Implements the Example class for an intersentence example.
 
         See Example's docstring for more information.
         """

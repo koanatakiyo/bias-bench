@@ -73,6 +73,14 @@ parser.add_argument(
     help="choose train percentage",
 )
 
+parser.add_argument(
+    "--is_sg",
+    type=str,
+    choices=["True", "False"],
+    help="Is sg adapted",
+)
+
+
 
 if __name__ == "__main__":
 
@@ -97,6 +105,7 @@ if __name__ == "__main__":
     print(f" - cuda: {args.cuda}")
     print(f" - percentage: {args.percentage}")
     print(f" - task: {args.task}")
+
     
     # try_model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path).bfloat16()
 
@@ -123,6 +132,6 @@ if __name__ == "__main__":
         
     os.makedirs(f"{args.persistent_dir}/results/stereoset", exist_ok=True)
     with open(
-        f"{args.persistent_dir}/results/stereoset/{experiment_id}.json", "w"
+        f"{args.persistent_dir}/results/stereoset/{args.task}/{experiment_id}.json", "w"
     ) as f:
         json.dump(results, f, indent=2)

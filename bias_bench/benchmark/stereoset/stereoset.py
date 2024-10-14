@@ -48,7 +48,8 @@ class StereoSetRunner:
         # model_start_token=None,
         cuda=None,
         percentage=100,
-        task=None
+        task=None,
+        is_sg=None,
     ):
         """Initializes StereoSet runner.
 
@@ -86,36 +87,40 @@ class StereoSetRunner:
         self._cuda = cuda
         self._percentage = percentage
         self._task = task
+        self._is_sg = is_sg
 
 
     def __call__(self):
         bias = {}
 
-        print("Evaluating intrasentence task.")
-        intrasentence_bias, stereoset_data = self.evaluate_intrasentence()
-        bias["intrasentence"] = intrasentence_bias
+        if self._task == "intrasentence":
+            print("Evaluating intrasentence task.")
+            intrasentence_bias, stereoset_data = self.evaluate_intra_inter_sentence()
+            bias["intrasentence"] = intrasentence_bias
+        elif self._task == "intersentence":
+            print("Evaluating intersentence task.")
+            intersentence_bias, stereoset_data = self.evaluate_intra_inter_sentence()
+            bias["intersentence"] = intersentence_bias # prediction of bias
 
         return bias, stereoset_data
 
 
 
-    def evaluate_intrasentence(self):
+    def evaluate_intra_inter_sentence(self):
         device = torch.device(f"cuda:{self._cuda}" if torch.cuda.is_available() else "cpu")
         # Use either the generative or discriminative version of likelihood scoring.
         if self._is_generative:
             stereoset_data = None
-            # Find start token for the model
-            # unconditional_start_token = start_token_mapper(self._model_name_or_path.split("/")[-1].split("-")[0].lower())
-            # unconditional_start_token = self._model_start_token
-            # print(f"Unconditional start token: {unconditional_start_token}")
             sentence_probabilities, stereoset_data = self._likelihood_score_generative(device)
             assert stereoset_data is not None
         else:
+            stereoset_data = None
             sentence_probabilities, stereoset_data = self._likelihood_score(device)
             assert stereoset_data is not None
 
         return sentence_probabilities, stereoset_data
-    
+
+
 
     def _likelihood_score(self,device):
         """Score intrasentence examples using likelihood scoring as proposed by Nadeem et al.
@@ -137,7 +142,8 @@ class StereoSetRunner:
             pad_to_max_length=pad_to_max_length,
             input_file=self._input_file,
             model_name_or_path=self._model_name_or_path,
-            percentage=self._percentage
+            percentage=self._percentage,
+            is_sg=self._is_sg,
         )
 
         loader = DataLoader(dataset, batch_size=self._batch_size)
@@ -214,7 +220,7 @@ class StereoSetRunner:
         model = self._intrasentence_model
 
         # Load the dataset.
-        stereoset = dataloader.StereoSet(self._input_file, self._percentage, self._task)
+        stereoset = dataloader.StereoSet(self._input_file, self._percentage, self._task, self._is_sg)
 
         # Assume we are using GPT-2.
         unconditional_start_token = self._tokenizer.bos_token
@@ -229,12 +235,9 @@ class StereoSetRunner:
             with torch.no_grad():
                 initial_token_probabilities = model(start_token)
 
-            # initial_token_probabilities.shape == (1, 1, vocab_size).
             initial_token_probabilities = torch.softmax(
                 initial_token_probabilities[0], dim=-1
             )
-
-            # assert initial_token_probabilities.data.size()[1] <= 2
 
             initial_token_num = initial_token_probabilities.data.size()[1] 
 
@@ -250,7 +253,11 @@ class StereoSetRunner:
             assert initial_token_probabilities.shape[0] == 1
             assert initial_token_probabilities.shape[1] == 1
 
-        clusters = stereoset.get_intrasentence_examples()
+        if self._task == "intrasentence":
+            clusters = stereoset.get_intrasentence_examples()
+        elif self._task == "intersentence":
+            clusters = stereoset.get_intersentence_examples()
+
         predictions = []
         for cluster in tqdm(clusters):
             joint_sentence_probability = []

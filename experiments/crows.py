@@ -69,6 +69,7 @@ parser.add_argument(
 parser.add_argument(
     "--is_sg",
     type=bool,
+    default=True,
 )
 
 
@@ -85,7 +86,6 @@ if __name__ == "__main__":
 
     print("Running CrowS-Pairs benchmark:")
     print(f" - persistent_dir: {args.persistent_dir}")
-    # print(f" - model: {args.model}")
     print(f" - model_name_or_path: {args.model_name}")
     print(f" - bias_type: {args.bias_type}")
     print(f" - seed: {args.seed}")

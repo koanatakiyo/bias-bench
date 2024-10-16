@@ -20,7 +20,7 @@
                 // "--batch_size", "1",
                 "--seed", "42", 
                 "--cuda", "2", "--model_name_or_path", "microsoft/Phi-3-mini-4k-instruct",
-                "--percentage", "5", "--is_sg", "False", "--task", "intersentence",
+                "--percentage", "1", "--is_sg", "True", "--task", "intersentence",
             ]
         }
     ]

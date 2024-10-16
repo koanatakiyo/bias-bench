@@ -109,8 +109,15 @@ def extract_sample_from_response(dataset, response, retry) -> Dict:
     try:
         # print("222")
         result_json = re.sub(f'^.*?{re.escape("{")}', '{', response)
+
+        json_match = re.search(r'\{.*\}', response, re.DOTALL)
+
+
+        json_string = json_match.group(0)
+        result_json = json.loads(json_string)  # Convert JSON string to Python dictionary
+
         # print('333')
-        result_json = json.loads(result_json)
+        # result_json = json.loads(result_json)
         # print(result_json)
 
         if dataset.lower() == "stereoset":

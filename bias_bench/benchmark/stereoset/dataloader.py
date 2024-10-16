@@ -231,6 +231,8 @@ class Sentence(object):
         assert type(ID) == str
         assert gold_label in ["stereotype", "anti-stereotype", "unrelated"]
         if  is_sg != "True":
+
+
             assert isinstance(labels, list)
             assert isinstance(labels[0], Label)
             self.labels = labels

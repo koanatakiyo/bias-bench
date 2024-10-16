@@ -156,10 +156,7 @@ class ScoreEvaluator:
         for example in examples:
             pro_id = self.example2sent[(example.ID, "stereotype")]
             anti_id = self.example2sent[(example.ID, "anti-stereotype")]
-            try:
-                unrelated_id = self.example2sent[(example.ID, "unrelated")]
-            except:
-                print("what?")
+            unrelated_id = self.example2sent[(example.ID, "unrelated")]
             # assert self.id2score[pro_id] != self.id2score[anti_id]
             # assert self.id2score[unrelated_id] != self.id2score[anti_id]
 
